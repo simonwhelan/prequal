@@ -8,12 +8,8 @@
 #include <math.h>
 
 
-#define EXTERN 
+#define EXTERN
 #include "hmm.h"
-#undef EXTERN
-
-#define EXTERN extern
-#include "utils.h"
 #undef EXTERN
 
 
@@ -1040,20 +1036,20 @@ void approx_forward(char *seqX, char *seqY, int lenX, int lenY) {
 				continue;
 			}
 			total_count++;
-			if (j < leftBounds[i - 1] || j > rightBounds[i - 1]) {
-				Mfmatrix[i][j] = Xfmatrix[i][j] = Yfmatrix[i][j] = -FLT_MAX;
-#ifdef LONG
-				XLfmatrix[i][j] = YLfmatrix[i][j] = -FLT_MAX;
-#endif
-				skip_count++;
-				continue;
-			}
 			// Calculate Mfmatrix[i][j]
 			if (i != 0 && j != 0) {
+				if (j < leftBounds[i - 1] || j > rightBounds[i - 1]) {
+					Mfmatrix[i][j] = Xfmatrix[i][j] = Yfmatrix[i][j] = -FLT_MAX;
+#ifdef LONG
+					XLfmatrix[i][j] = YLfmatrix[i][j] = -FLT_MAX;
+#endif
+					skip_count++;
+					continue;
+				}
 				if (i != 1 || j != 1) {
 					tmp = selfM + Mfmatrix[i - 1][j - 1];
-					addLogProb(Yfmatrix[i-1][j-1]+XYtoM,tmp);
-					addLogProb(Xfmatrix[i-1][j-1]+XYtoM,tmp);
+					addLogProb(Yfmatrix[i - 1][j - 1] + XYtoM, tmp);
+					addLogProb(Xfmatrix[i - 1][j - 1] + XYtoM, tmp);
 #ifdef LONG
 					addLogProb(YLfmatrix[i-1][j-1]+XYLtoM,tmp);
 					addLogProb(XLfmatrix[i-1][j-1]+XYLtoM,tmp);
@@ -1068,10 +1064,7 @@ void approx_forward(char *seqX, char *seqY, int lenX, int lenY) {
 #endif
 					assert((int) (seqX[i - 1]) >= 0 && (int) (seqX[i - 1]) < 20);
 					assert((int) (seqY[j - 1]) >= 0 && (int) (seqY[j - 1]) < 20);
-					Mfmatrix[i][j]
-							= tmp
-									+ emitPairsDefault[(int) (seqX[i - 1])][(int) (seqY[j
-											- 1])];
+					Mfmatrix[i][j] = tmp + emitPairsDefault[(int) (seqX[i - 1])][(int) (seqY[j - 1])];
 				}
 			} else {
 				Mfmatrix[i][j] = -FLT_MAX;
@@ -1261,20 +1254,19 @@ void approx_backward(char *seqX, char *seqY, int lenX, int lenY) {
 			if (i == lenX && j == lenY) {
 				continue;
 			}
-			// The approximate bit
-			if (j < leftBounds[i - 1] || j > rightBounds[i - 1]) {
-				Mbmatrix[i][j] = Xbmatrix[i][j] = Ybmatrix[i][j] = -FLT_MAX;
-#ifdef LONG
-				XLbmatrix[i][j] = YLbmatrix[i][j] = -FLT_MAX;
-#endif
-				continue;
-			}
 			// Calculate Mbmatrix[i][j]
 			tmp = -FLT_MAX;
 			if (i != lenX && j != lenY) {
-				tmp = selfM
-						+ emitPairsDefault[(int) (seqX[i])][(int) (seqY[j])]
-						+ Mbmatrix[i + 1][j + 1];
+				// The approximate bit (Note no offset here)
+				if (j < leftBounds[i] || j > rightBounds[i]) {
+					Mbmatrix[i][j] = Xbmatrix[i][j] = Ybmatrix[i][j] = -FLT_MAX;
+#ifdef LONG
+					XLbmatrix[i][j] = YLbmatrix[i][j] = -FLT_MAX;
+#endif
+					continue;
+				}
+
+				tmp = selfM + emitPairsDefault[(int) (seqX[i])][(int) (seqY[j])] + Mbmatrix[i + 1][j + 1];
 			}
 
 			if (i != lenX) {
@@ -1377,3 +1369,135 @@ void approx_backward(char *seqX, char *seqY, int lenX, int lenY) {
 
 }
 
+/*
+"ARNDCQEGHILKMFPSTWYV"
+*/
+int pep2num(char c) {
+  int r;
+
+  switch(c) {
+    case 'A':
+    case 'a':
+      return 0;
+    break;
+    case 'R':
+    case 'r' :
+      return 1;
+    break;
+    case 'N':
+    case 'n' :
+      return 2;
+    break;
+    case 'D':
+    case 'd' :
+      return 3;
+    break;
+    case 'C':
+    case 'c' :
+      return 4;
+    break;
+    case 'Q':
+    case 'q' :
+      return 5;
+    break;
+    case 'E':
+    case 'e' :
+      return 6;
+    break;
+    case 'G':
+    case 'g' :
+      return 7;
+    break;
+    case 'H':
+    case 'h' :
+      return 8;
+    break;
+    case 'I':
+    case 'i' :
+      return 9;
+    break;
+    case 'L':
+    case 'l':
+      return 10;
+    break;
+    case 'K':
+    case 'k':
+      return 11;
+    break;
+    case 'M':
+    case 'm':
+      return 12;
+    break;
+    case 'F':
+    case 'f':
+      return 13;
+    break;
+    case 'P':
+    case 'p' :
+      return 14;
+    break;
+    case 'S':
+    case 's' :
+      return 15;
+    break;
+    case 'T':
+    case 't' :
+      return 16;
+    break;
+    case 'W':
+    case 'w' :
+      return 17;
+    break;
+    case 'Y':
+    case 'y' :
+      return 18;
+    break;
+    case 'V':
+    case 'v' :
+      return 19;
+    break;
+    case 'X':
+    case 'x':
+    case 'U':
+    case 'u':
+      r = (int)(20*(((double)rand())/((double)RAND_MAX)));
+      return r;
+    break;
+    case 'Z':
+    case 'z':
+      r = (int)(2*(((double)rand())/((double)RAND_MAX)));
+      return (r+5);
+    break;
+    case 'B':
+    case 'b':
+      r = (int)(2*(((double)rand())/((double)RAND_MAX)));
+      return (r+2);
+      break;
+    case 'J':
+    case 'j':
+      r = (int)(2*(((double)rand())/((double)RAND_MAX)));
+      return (r+9);
+      break;
+    case '-':
+    case '.':
+      return 20;
+    break;
+    default:
+      error("Illegal character <%c>\n",c);
+      return -1;
+    break;
+  }
+}
+
+/*
+** A handy error function to prints  an error message and die
+*/
+void error(char *fmt, ... ) {
+  va_list args;
+  va_start(args, fmt);
+  fprintf(stderr,"\n\nerror: ");
+  vfprintf(stderr, fmt, args);
+  fprintf(stderr,"  exiting...\n\n");
+  va_end(args);
+  exit(EXIT_FAILURE);
+}

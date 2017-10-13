@@ -17,12 +17,6 @@
 #include <numeric>
 #include <regex>
 
-extern "C" {
-#define EXTERN extern
-#include "utils.h"
-#include "hmm.h"
-#undef EXTERN
-}
 
 /////////////// General naming stuff
 const std::string PROGRAM_NAME = "seqfilter";
@@ -105,40 +99,7 @@ private:
 
 double mean(std::vector <double> vec);
 double stdev(std::vector <double> vec);
-void RunHMM(std::string outFile, bool forceOverwrite = false);		// C++ interaction function with Zorro
 double TargetCutoff(double prop2Keep);							// Computes the target cutoff given a specific proportion to keep
 void DoFiltering(double Threshold);								// Applies the filtering method
-
-// Kmer stuff
-void MakeKmers();
-void extractKmers(std::string& seq, std::unordered_map<std::string,short>* umap);
-std::vector <double> MakeKmerDistanceRow(int CurSeq);
-unsigned int commonKmerCount(unsigned int i, unsigned int j);
-std::vector <int> GetClosest(int Sequence, int NumberClosest);
-
-inline bool file_exist (const std::string& name) {
-  struct stat buffer;
-  return (stat (name.c_str(), &buffer) == 0);
-}
-
-inline std::string read_line(std::istream &in) {
-	std::string tmp;
-	getline(in,tmp);
-	if(!in.good()) { std::cout << "\nError reading file..."; exit(-1); }
-	return tmp;
-}
-
-template <typename T>
-std::vector<int> ordered(std::vector<T> const& values) {
-    std::vector<int> indices(values.size());
-    std::iota(begin(indices), end(indices), static_cast<int>(0));
-
-    std::sort(
-        begin(indices), end(indices),
-        [&](int a, int b) { return values[a] < values[b]; }
-    );
-    return indices;
-}
-
 
 #endif /* SEQFILTER_H_ */

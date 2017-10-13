@@ -10,6 +10,8 @@
 int CSequence::_maxLength = 0;
 char CSequence::_filterOut = 'X';
 
+using namespace::std;
+
 //////////////// CSequence
 CSequence::CSequence(std::string name, std::string seq) {
 	AddName(name);

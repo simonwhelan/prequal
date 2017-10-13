@@ -22,15 +22,14 @@
 #include <iomanip>
 #include "SeqFilter.h"
 #include "Sequence.h"
+#include "ZorroInterface.h"
 
 using namespace::std;
 
 // Global variables. Ugly, but easiest quick solution
-COptions *options = NULL;
 vector <CSequence> *data = NULL;
 double **PP = NULL;
-vector<unordered_map<string,short>*>* kmers;
-unsigned int kmerSize = 4;
+COptions *options = NULL;			// Global options; would be better as a singleton, but this works
 
 int main(int argc, char * argv[]) {
 
@@ -42,28 +41,13 @@ int main(int argc, char * argv[]) {
 
 	// Read data and sort initialisation
 	data = FASTAReader(options->Infile()); // Reads the sequences
-	Nseq = data->size(); // Allocates the number of sequences in utils.h
-	sequence = new char*[data->size()]; // Allocates sequence array from utits.h
-	lens = new int[data->size()]; // Gets the memory for lengths from utils.h
-	PP = new double*[data->size()]; // Initialise Posterior probabilities
-	for (int i = 0; i < data->size(); i++) {
-		sequence[i] = new char[data->at(i).length()];
-		PP[i] = new double[data->at(i).length()];
-		lens[i] = data->at(i).length();
-		for (int j = 0; j < data->at(i).length(); j++) {
-			if (data->at(i).Seq(j).find("-") != std::string::npos) {
-				cout << "\nERROR: sequence contains gaps and will break when pushed through a pairHMM...\n";
-				exit(-1);
-			}
-			sequence[i][j] = pep2num(data->at(i).Seq(j)[0]); // Do the weird character to int to character conversion that Zorro demands...
-			PP[i][j] = 0.0;
-		}
-	}
 	cout << "\nThere are " << data->size() << " sequences of max length " << CSequence::MaxLength();
 	//	for(int i = 0; i < data->size(); i++) { cout << "\ni=" << i << "\t" << data->at(i).out(); }
 
 	// Run the HMM if needed
-	RunHMM(options->Infile() + options->PPSuffix(), options->Overwrite_PP());
+	PP = RunHMM(data,options->Infile() + options->PPSuffix(), options->Overwrite_PP());
+
+//	double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrite)
 
 	// Define the threshold
 	if (options->DoKeepProportion()) {
@@ -156,123 +140,12 @@ int main(int argc, char * argv[]) {
 	sequence_out.close();
 
 	// Clean up memory
-	for(int i = 0; i < data->size(); i++) { delete [] PP[i]; delete [] sequence[i];  } delete [] sequence; delete [] PP;
+	for(int i = 0; i < data->size(); i++) { delete [] PP[i];  } delete [] PP;
 	delete data;
 
 	cout << " ... program complete!\n\n";
 }
 
-#define DEBUG_PP 0
-// Run the HMM stuff if required
-void RunHMM(string outFile, bool forceOverwrite) {
-	assert(data != NULL);
-	// If file exists read the PPs
-	if(file_exist(outFile) && !forceOverwrite) {
-		cout << "\nPosterior probability file <" << outFile << "> exists. \n\tReading file";
-		vector <string> Toks;
-		string tmp;
-		ifstream in(outFile);
-		// Check sequence number
-		tmp = read_line(in);
-		Toks = Tokenise(tmp);
-		if(Toks.size() != 1) { cout << "\nNumber of sequences on first line contains multiple tokens in PP file\n"; exit(-1); }
-		if(atoi(Toks[0].c_str()) != data->size()) { cout << "\nNumber of sequences in first line of PP file does not match data\n"; exit(-1); }
-		cout << " ... checking names" << flush;
-		// Check sequence names
-		for(int i = 0 ;i < data->size(); i++) {
-			tmp = read_line(in);
-			Toks = Tokenise(tmp);
-			if(Toks.size() != 1) { cout << "\nName of sequence " << i << " has white spaces. This is not allowed\n"; exit(-1); }
-			if(Toks[0] != data->at(i).Name()) { cout << "\nName of sequence " << i << " does not match that in data. This is not allowed\n"; exit(-1); }
-		}
-		cout << " ... checking PPs" << flush;
-		// Input PPs
-		double value;
-		for(int i = 0 ;i < data->size(); i++) {
-			tmp = read_line(in);
-			Toks = Tokenise(tmp);
-			if(Toks.size() != data->at(i).length()) { cout << "\nLength of sequence " << i << " does not match PPs. This is not allowed\n"; exit(-1); }
-			for(int j = 0; j < data->at(i).length(); j ++) {
-				value = (double) atof(Toks[j].c_str());
-				if(value < 0.0 || value > 1.0) { cout << "\nThe PPs for sequence " << i << " contains a non probability (" << value<< ")"; exit(-1); }
-				PP[i][j] = value;
-			}
-		}
-		in.close();
-		cout << " ... success" << flush;
-	} else {
-		// Calculate max length (repeat, but that's okay...)
-		vector <int> lengthDist;
-		for(int i = 0; i < data->size(); i++) {
-			lengthDist.push_back(data->at(i).length());
-		}
-		cout << "\nPrepping pairHMM" << flush;
-		initHMM(CSequence::MaxLength());
-		///////////////////////////////// Get the PPs according to options ////////////////////////////////////"
-		if(data->size() - options->PPnumber() < 5 || options->AllPP()) { // Get all the posteriors
-			cout << "\nCollecting all posterior probabilities. This may take some time for large data sets:\n";
-			SimonGetPosteriors(CSequence::MaxLength(), PP, options->DoApprox(), options->DefaultBound());
-		} else if(options->ClosePP()) { // The closest
-			cout << "\nCollecting subset of posterior probabilities based on closest " << options->PPnumber() << " sequences determined by Kmers\n\tThis may take time for larger data sets:\n" << flush;
-			int rLsize = -1;
-			MakeKmers();
-			cout << "\nCreating collection sets\n";
-			int **runList = new int*[data->size()];
-			for(int i = 0; i < data->size(); i++) {
-				vector <int> list = GetClosest(i, options->PPnumber());
-				ProgressSpinner(i);
-				runList[i] = new int[list.size()+1];
-				if(rLsize < 0) { rLsize = list.size(); }
-				else if(rLsize != list.size()) { cout << "\nProblem with different sized lists of running groups..."; }
-				for(int j = 0; j < list.size(); j++) { runList[i][j] = list[j]; }
-			}
-			assert(rLsize > 0);
-			cout << " ... done\nGetting posterior probabilities:\n";
-			SimonGetSubsetPosteriors(CSequence::MaxLength(), PP, runList, rLsize, options->DoApprox(), options->DefaultBound());
-			for(int i = 0; i < data->size(); i++) { delete [] runList[i]; } delete [] runList;
-		} else if(options->LongPP()) { // The longest
-			cout << "\nCollecting subset of posterior probabilities based on longest " << options->PPnumber() << " sequences:\n" << flush;
-			int *coreList = NULL;
-			vector <int> newL = ordered(lengthDist);
-			coreList = new int[options->PPnumber()];
-			for(int i = 0; i < options->PPnumber(); i++) {
-				coreList[i] = newL[data->size() - 1 - i];
-			}
-			int **runList = new int*[data->size()];
-			for(int i =0 ; i < data->size(); i++) {
-				runList[i] = coreList;
-			}
-			SimonGetSubsetPosteriors(CSequence::MaxLength(), PP, runList, options->PPnumber(), options->DoApprox(), options->DefaultBound());
-			for(int i =0 ; i < data->size(); i++) { runList[i] = NULL; }
-			delete [] runList;
-			delete [] coreList;
-		} else {
-			cout << "\nUnknown option for calculating posteriors...\n"; exit(-1);
-		}
-		// Output PPs
-		if (options->DoPPs()) {
-			cout << "\nOutputting posterior probabilities to " << outFile
-					<< flush;
-			ofstream out(outFile.c_str());
-			out << data->size();
-			for (int i = 0; i < data->size(); i++) {
-				out << "\n" << data->at(i).Name();
-			}
-			for (int i = 0; i < data->size(); i++) {
-				out << "\n";
-				for (int j = 0; j < data->at(i).length(); j++) {
-#if DEBUG_PP == 1
-					out <<"[" << i << ","<< j<<"]";
-#endif
-					out << PP[i][j] << "\t";
-				}
-			}
-			out << "\n";
-			out.close();
-			cout << "... done" << flush;
-		}
-	}
-}
 
 // Returns the cutoff based on the empirical set of PPs in PP[][]
 double TargetCutoff(double prop2Keep) {
@@ -371,76 +244,6 @@ void DoFiltering(double threshold) {
 	}
 	cout << "\n\t... done" << flush;
 }
-
-//////////////////////////////////////// Kmer stuff from PaHMM tree //////////////////////////////////////////
-
-void MakeKmers() {
-	assert(data != NULL);
-	// Get the memory
-	kmers = new vector<unordered_map<string,short>*>(data->size());
-
-	for(int i = 0; i < data->size(); i++) {
-		(*kmers)[i] = new unordered_map<string,short>();
-		string seq = data->at(i).Seq();
-		extractKmers(seq, (*kmers)[i]);
-	}
-}
-void extractKmers(string& seq, unordered_map<string, short>* umap)
-{
-	string kmer;
-
-	if(seq.size() < kmerSize)
-		return;
-
-	for(unsigned int i = 0; i< (seq.size() - kmerSize); i++)
-	{
-		kmer = seq.substr(i, kmerSize);
-		++((*umap)[kmer]);
-	}
-}
-
-vector <int> GetClosest(int Sequence, int NumberClosest) {
-	vector <double> dist = MakeKmerDistanceRow(Sequence);
-	vector <int> indices = ordered(dist);
-	for(int i = 0; i < indices.size(); i++) {
-		if(indices[i] == Sequence) {
-			indices.erase(indices.begin() + i);
-			break;
-		}
-	}
-	if(indices.size() > NumberClosest) {
-		indices.erase(indices.begin() + NumberClosest, indices.end());
-	}
-	return indices;
-}
-
-vector <double> MakeKmerDistanceRow(int CurSeq) {
-	vector <double> RetDist;
-	for(int i = 0; i < data->size(); i++) {
-		if(i == CurSeq) { RetDist.push_back(1.0); continue; }	// For the current sequence return error
-		double identity = 1.0 - commonKmerCount(i,CurSeq)/(double)my_min(data->at(i).length(),data->at(CurSeq).length());
-		identity = (pow(100, identity-1.04)+0.01)/0.6;	// Marcin's AA function
-		RetDist.push_back(identity);
-	}
-	return RetDist;
-}
-
-unsigned int commonKmerCount(unsigned int i, unsigned int j)
-{
-	unordered_map<string, short>* m1 = (*kmers)[i];
-	unordered_map<string, short>* m2 = (*kmers)[j];
-	unsigned int commonCount = 0;
-
-	for(auto it = m1->begin(); it != m1->end(); it++)
-	{
-		commonCount += std::min((short)((*m2)[it->first]), (short)(it->second));
-	}
-	//DEBUG("Common k-mer count between seq. " << i << " and " << j << " is " << commonCount);
-	return commonCount;
-
-
-}
-
 
 double mean(vector <double> vec) {
 	double ret = 0.0;

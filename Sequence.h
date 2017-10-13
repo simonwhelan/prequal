@@ -85,5 +85,28 @@ inline void ProgressSpinner(int suffix = -1) {
         if(count == 4) { count = 0; }
 };
 
+inline bool file_exist (const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
+
+inline std::string read_line(std::istream &in) {
+	std::string tmp;
+	getline(in,tmp);
+	if(!in.good()) { std::cout << "\nError reading file..."; exit(-1); }
+	return tmp;
+}
+
+template <typename T>
+std::vector<int> ordered(std::vector<T> const& values) {
+    std::vector<int> indices(values.size());
+    std::iota(begin(indices), end(indices), static_cast<int>(0));
+
+    std::sort(
+        begin(indices), end(indices),
+        [&](int a, int b) { return values[a] < values[b]; }
+    );
+    return indices;
+}
 
 #endif /* SEQUENCE_H_ */
