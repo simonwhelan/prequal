@@ -78,6 +78,10 @@ std::vector <CSequence> *FASTAReader(std::string SeqFile) {
     	line = RemoveWhiteSpace(line);
         if( line.empty() || line[0] == '>' ){ // Identifier marker
             if( !line.empty() ){
+            	if(!name.empty()) { // Push the sequence back
+            		RetSeq->push_back(CSequence(RemoveWhiteSpace(name),RemoveWhiteSpace(content)));
+            		name.clear(); content.clear();
+            	}
                 name = line.substr(1);
             }
             content.clear();
@@ -87,14 +91,11 @@ std::vector <CSequence> *FASTAReader(std::string SeqFile) {
                 content.clear();
             } else {
                 content += line;
-                RetSeq->push_back(CSequence(RemoveWhiteSpace(name),RemoveWhiteSpace(content)));
-//              	seq.name = RemoveWhiteSpace(name);
- //               seq.seq = RemoveWhiteSpace(content);
-//                RetSeq->push_back(seq);
-                name.clear();
             }
         }
     }
+    // Add the final sequence
+    RetSeq->push_back(CSequence(RemoveWhiteSpace(name),RemoveWhiteSpace(content)));
     return RetSeq;
 }
 
