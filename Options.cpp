@@ -61,12 +61,16 @@ COptions::COptions(int argc, char *argv[]) {
 				}
 			}
 			cout << "\n\nSimple options (-h all for full options)";
+			cout << "\n\t-filterprop X       \t: Filter the sequences so that in total X proportion (range 0.0 - 1.0) \n\t\t\t\t\tof the sequences are maintained. (DEFAULT: "
+				 << _keepProportion << ")";
 			cout << "\n\t-corerun X       \t: X number of high posterior sites at beginning and end before \n\t\t\t\t\ta core region is defined [DEFAULT "
 				 << _runBeforeInside << "]";
 			cout << "\n\t-pptype X [Y]       \t: Specify the algorithm used to calculate posterior probabilities\n\t\t\t\t\tX = all : for all against all sequence comparisons";
+			cout << "\n\t\t\t\t\tX = closest : for Y closest relatives [DEFAULT; Y = 10]\n\t\t\t\t\tX = longest : for comparing the Y longest sequences [Y = 10]";
 			cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 			cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
-			cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file\n\n";
+			cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file";
+			cout << "\nTypical usage:\n\t " << PROGRAM_NAME << " -filterpror 0.85 input_file\n\n";
 			exit(-1);
 		}
 		/////////// Core stuff
