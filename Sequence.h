@@ -28,10 +28,11 @@ public:
 	CSequence(std::string name, std::string seq);	// Standard constructor
 //	std::string name;
 //	std::string seq;
-	std::vector <bool> Inside;				// Whether the character is on the inside or outside
-	std::vector <bool> Remove;				// Whether to remove in the filter (true = remove)
-	double PropInside;						// The proportion of the sequence labeled inside
-	double PropRemoved;						// The proportion of hte sequence labeled to be removed
+	std::vector <bool> Inside;					// Whether the character is on the inside or outside
+	std::vector <bool> Remove;					// Whether to remove in the filter (true = remove)
+	double PropInside;							// The proportion of the sequence labeled inside
+	double PropRemoved;							// The proportion of hte sequence labeled to be removed
+	bool AllRemoved() { return _allRemoved; }
 	void AddSequence(std::string seq);
 	void AddName(std::string name);
 	static void SetFilter(char filterOut) { _filterOut = filterOut; };
@@ -51,12 +52,14 @@ public:
 		}
 		PropInside = (double) in / (double) length();
 		PropRemoved = (double) rem / (double) length();
+		if(rem == length()) { _allRemoved = true; }
 	}
 private:
 	static int _maxLength;		// Maximum length of the sequences examined
 	std::string _name;			// The sequence
 	std::string _seq;			// The name
 	static char _filterOut;		// The string output on filtering
+	bool _allRemoved = false;	// Whether the sequence is fully removed
 
 	void InitialiseFlags() {
 		assert(Inside.empty() && Remove.empty());

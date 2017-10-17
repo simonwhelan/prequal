@@ -1,5 +1,4 @@
-/*
- * Options.cpp
+/* Options.cpp
  * **
  * Sets the options from the command line
  *
@@ -37,22 +36,21 @@ COptions::COptions(int argc, char *argv[]) {
 			if(i + 1 < argc) {
 				if(strcmp(argv[i+1],"all") == 0) {
 					cout << "\n\nOptions affecting the core region and filtering:";
-					cout << "\n\t-corerun X       \t: X number of high posterior sites at beginning and end before \n\t\t\t\t\ta core region is defined [DEFAULT "
+					cout << "\n\t-corerun X       \t: X number of high posterior residues at beginning and end before \n\t\t\t\t\ta core region is defined [DEFAULT "
 						 << _runBeforeInside << "]";
 					cout << "\n\t-nocore          \t: No core region will be defined [DEFAULT uses core region]";
-					cout << "\n\t-removeall       \t: Remove all sites rather than those outside the core region \n\t\t\t\t\t[DEFAULT sites in core filtered with X]";
-					cout << "\n\t-corefilter X    \t: The character outputted in the core for the  filtered alignment [DEFAULT is X]";
+					cout << "\n\t-removeall       \t: Remove all residues rather than those outside the core region \n\t\t\t\t\t[DEFAULT residues in core filtered with " << CoreFilter() <<"]";
+					cout << "\n\t-corefilter X    \t: The character outputted in the core for the  filtered alignment [DEFAULT is "<< CoreFilter() << "]";
 					cout << "\n\nOptions affecting output formats:";
-					cout << "\n\t-outsuffix X     \t: Output file will be the original name with X as a suffix [DEFAULT .filtered]";
-					cout << "\n\t-dosummary X     \t: Output summary statistics to file suffixed with X [if no X then DEFAULT .summary]";
-					cout << "\n\t-dodetail X      \t: Output detailed statistics to file suffixed with X [if no X then DEFAULT .detail]";
+					cout << "\n\t-outsuffix X     \t: Output file will be the original name with X as a suffix [DEFAULT " << OutSuffix() << "]";
+					cout << "\n\t-dosummary X     \t: Output summary statistics to file suffixed with X [if no X then DEFAULT " << SummarySuffix() << "]";
+					cout << "\n\t-dodetail X      \t: Output detailed statistics to file suffixed with X [if no X then DEFAULT " << DetailSuffix() << "]";
 					cout << "\n\t-noPP            \t: Stop outputting the posterior probability matrix";
 					cout << "\n\nOptions affecting posterior probabilities and filtering:";
 					cout << "\n\t-pptype X [Y]       \t: Specify the algorithm used to calculate posterior probabilities\n\t\t\t\t\tX = all : for all against all sequence comparisons";
-					cout << "\n\t\t\t\t\tX = closest : for Y closest relatives [DEFAULT; Y = 10]\n\t\t\t\t\tX = longest : for comparing the Y longest sequences [Y = 10]";
-					cout << "\n\t-filterprop X       \t: Filter the sequences so that in total X proportion (range 0.0 - 1.0) \n\t\t\t\t\tof the sequences are maintained. (DEFAULT: "
-						 << _keepProportion << ")";
-					cout << "\n\t-filterthresh X     \t: Filter the sequences to the posterior probabilities threshold X \n\t\t\t\t\t(range 0.0 - 1.0). Any amount of sequence can be removed. Not recommended.";
+					cout << "\n\t\t\t\t\tX = closest : for Y closest relatives [DEFAULT; Y = " << PPnumber() << "]\n\t\t\t\t\tX = longest : for comparing the Y longest sequences [Y = " << PPnumber() << "]";
+					cout << "\n\t-filterprop X       \t: Filter the sequences so that in total X proportion (range 0.0 - 1.0) \n\t\t\t\t\tof the sequences are maintained. This can be used to tune filtering.";
+					cout << "\n\t-filterthresh X     \t: Filter the sequences to the posterior probabilities threshold X [DEFAULT = " << KeepThreshold() << "]\n\t\t\t\t\t(range 0.0 - 1.0). DEFAULT filtering option with threshold";
 					cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 					cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
 					cout << "\n\t-nofilterword X     \t: Specify a file X that contains a list of words and sequence names that contain \n\t\t\t\t\tthose words will not be filtered. In X one word per line.";
@@ -61,12 +59,11 @@ COptions::COptions(int argc, char *argv[]) {
 				}
 			}
 			cout << "\n\nSimple options (-h all for full options)";
-			cout << "\n\t-filterprop X       \t: Filter the sequences so that in total X proportion (range 0.0 - 1.0) \n\t\t\t\t\tof the sequences are maintained. (DEFAULT: "
-				 << _keepProportion << ")";
-			cout << "\n\t-corerun X       \t: X number of high posterior sites at beginning and end before \n\t\t\t\t\ta core region is defined [DEFAULT "
+			cout << "\n\t-filterthresh X     \t: Filter the sequences to the posterior probabilities threshold X [DEFAULT = " << KeepThreshold() << "]\n\t\t\t\t\t(range 0.0 - 1.0). DEFAULT filtering option with threshold";
+			cout << "\n\t-corerun X       \t: X number of high posterior residues at beginning and end before \n\t\t\t\t\ta core region is defined [DEFAULT "
 				 << _runBeforeInside << "]";
 			cout << "\n\t-pptype X [Y]       \t: Specify the algorithm used to calculate posterior probabilities\n\t\t\t\t\tX = all : for all against all sequence comparisons";
-			cout << "\n\t\t\t\t\tX = closest : for Y closest relatives [DEFAULT; Y = 10]\n\t\t\t\t\tX = longest : for comparing the Y longest sequences [Y = 10]";
+			cout << "\n\t\t\t\t\tX = closest : for Y closest relatives [DEFAULT; Y = " << PPnumber() << "]\n\t\t\t\t\tX = longest : for comparing the Y longest sequences [Y = " << PPnumber() << "]";
 			cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 			cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
 			cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file";

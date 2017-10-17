@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) {
 	options = new COptions(argc, argv);
 	CSequence::SetFilter(options->CoreFilter());
 	double threshold;
-	vector<double> values;
+	vector<double> values;							// Generic vector for moving around values
 
 	// Read data and sort initialisation
 	data = FASTAReader(options->Infile()); // Reads the sequences
@@ -45,17 +45,16 @@ int main(int argc, char * argv[]) {
 	//	for(int i = 0; i < data->size(); i++) { cout << "\ni=" << i << "\t" << data->at(i).out(); }
 
 	// Run the HMM if needed
-	PP = RunHMM(data,options->Infile() + options->PPSuffix(), options->Overwrite_PP());
-
-//	double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrite)
+	PP = RunHMM(data,options->Infile() + options->OutSuffix() + options->PPSuffix(), options->Overwrite_PP());
 
 	// Define the threshold
 	if (options->DoKeepProportion()) {
 		cout << "\n\nExamining posterior probabilities to determine appropriate thresholds to retain " << options->KeepProportion() * 100 << "% of sequence" << flush;
-		threshold = TargetCutoff(options->KeepProportion());
-	} else {
+	}
+	threshold = TargetCutoff(options->KeepProportion());
+	if(!options->DoKeepProportion()) {
 		threshold = options->KeepThreshold();
-		cout << "\n\nThreshold set to input value";
+		cout << "\n\nThreshold set to input value of " << threshold;
 	}
 	assert(InRange(threshold, 0.0, 1.0));
 
@@ -77,8 +76,8 @@ int main(int argc, char * argv[]) {
 				if(PP[i][j] > max) { max = PP[i][j]; }
 				values.push_back(PP[i][j]);
 			}
-			detail_out << data->at(i).Name();
-			detail_out << "\nmean= " << mean(values) << " : stdev= " << stdev(values) << " : poscut= " << mean(values) - (4*stdev(values)) << " : max= " << max;
+			detail_out << ">" << data->at(i).Name();
+//			detail_out << "\nmean= " << mean(values) << " : stdev= " << stdev(values) << " : poscut= " << mean(values) - (4*stdev(values)) << " : max= " << max;
 			for(int j = 0; j < data->at(i).length(); j++) {
 				detail_out << "\n["<< j<< "]" << data->at(i).RealSeq(j) << "\t" << PP[i][j] << "\t" << data->at(i).Remove[j] << "\t" << data->at(i).Inside[j];
 			}
@@ -96,7 +95,6 @@ int main(int argc, char * argv[]) {
 		double rem_mean = 0, rem_max = 0, in_mean = 0, in_min = 1.0;
 		int rem_index = -1, in_index = -1;
 		for(int i = 0; i < data->size(); i++) {
-			data->at(i).CalculateSummary();
 			// Removed
 			rem_mean += data->at(i).PropRemoved;
 			if(data->at(i).PropRemoved > rem_max) { rem_max = data->at(i).PropRemoved; rem_index = i; }
@@ -121,9 +119,15 @@ int main(int argc, char * argv[]) {
 	cout << "\n\tOutputting filtered sequences to " << options->Infile() << options->OutSuffix();
 	int total_char = 0;
 	int output_char = 0;
+	int output_seq = 0;
 	ofstream sequence_out(options->Infile() + options->OutSuffix());
 	for(int i = 0; i < data->size(); i++) {
 		total_char += data->at(i).length();
+		if(data->at(i).AllRemoved()) {
+			cout << "\n\tFULLY REMOVED SEQUENCE: " << data->at(i).Name();
+			continue;
+		}
+		output_seq++;
 		sequence_out << ">" << data->at(i).Name() << endl;
 		// The whole sequence when filtered
 		if(options->IgnoreSequence(data->at(i).Name())) {
@@ -136,21 +140,22 @@ int main(int argc, char * argv[]) {
 		for(int j = 0; j < output.size(); j++) { if(output[j] != options->CoreFilter()) { output_char ++; } }
 		sequence_out << output << endl;
 	}
-	cout << "\nIn total " << output_char << " / " << total_char << "(" << 100* ((double)output_char/(double)total_char) << "%) of sequences retained";
+	// Make nice summary of information
+	cout << "\n\n=================== Summary ===================";
+	cout << "\n              " << std::setw(8) << "Original" << std::setw(10) << "Filtered" << std::setw(10) << "%Retained";
+	cout << "\n#Sequences    " << std::setw(8) << data->size() << std::setw(10) << output_seq << std::setw(9) << std::setprecision(3) << 100 * (double)output_seq/(double)data->size() << "%";
+	cout << "\n#Residues     " << std::setw(8) << total_char << std::setw(10) << output_char << std::setw(9) << std::setprecision(3) << 100 * (double)output_char/(double)total_char << "%";
+	cout << "\n\nComplete\n";
 	sequence_out.close();
 
 	// Clean up memory
 	for(int i = 0; i < data->size(); i++) { delete [] PP[i];  } delete [] PP;
 	delete data;
-
-	cout << " ... program complete!\n\n";
 }
 
 
 // Returns the cutoff based on the empirical set of PPs in PP[][]
 double TargetCutoff(double prop2Keep) {
-	cout << "\n\n<<<<<<<<<<<<<<<<< TODO: Make better cut-off for filtered sequences! <<<<<<<<<<<<<<<\n";
-	cout << "\nDetermining empirical cut-off to retain " << prop2Keep * 100<< "% of sequence data";
 	int total_length = 0;
 	vector <double> tmp_PP;
 	for(int i = 0; i < data->size(); i++)  {
@@ -161,7 +166,7 @@ double TargetCutoff(double prop2Keep) {
 	}
 	std::sort(tmp_PP.begin(),tmp_PP.end());
 	int count_stop;
-	cout << "\nHelpful cut-offs ([PropRetained] Cutoffs):";
+	cout << "\n\nHelpful cut-offs ([PropRetained] Cutoffs):";
 	cout << std::fixed;
 	cout << std::setprecision(4);
 
@@ -181,8 +186,8 @@ void DoFiltering(double threshold) {
 	int thresholdCount = 0;
 	// Apply the threshold in a simple way
 	for (int i = 0; i < data->size(); i++) {
-		// 2. Find the sites to be filtered
-		//		cout << " filtered sites..." << flush;
+		// 2. Find the residues to be filtered
+		//		cout << " filtered residues ..." << flush;
 		for (int j = 0; j < data->at(i).length(); j++) {
 			if (PP[i][j] < threshold) {
 				thresholdCount++;
@@ -190,7 +195,7 @@ void DoFiltering(double threshold) {
 			}
 		}
 	}
-	cout << " resulting in " << thresholdCount << " sites removed" << flush;
+	cout << " resulting in " << thresholdCount << " residues removed" << flush;
 	// Do the joining of filtered/outside regions if options require so
 	if(options->FilterRange() > 0) {
 		cout << "\n\tExtending filtered regions with width of " << options->FilterRange() << " ";
@@ -241,6 +246,10 @@ void DoFiltering(double threshold) {
 			}
 		}
 		cout << " resulting in " <<seqTrimmed << " sections removed" << flush;
+	}
+	// Get the summary statistics
+	for(int i = 0; i < data->size(); i++) {
+		data->at(i).CalculateSummary();
 	}
 	cout << "\n\t... done" << flush;
 }

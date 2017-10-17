@@ -84,9 +84,9 @@ private:
 	// Filtering options
 	std::vector <std::string> _noFilterList;		// List of taxa names that will not be filtered at all
 	std::vector <std::string> _noFilterWord;		// List of taxa regular expressions that will not be filtered at all
-	double _keepProportion = 0.85;		// The proportion of sites to be kept
-	double _filterThreshold = -1.0;		// Hard set the filter threshold
-	int _joinFilterRange = 25;			// The maximum gap between filtered characters before the whole segment is filtered
+	double _keepProportion = 0.95;		// The proportion of residues to be kept
+	double _filterThreshold = 0.99;		// Hard set the filter threshold
+	int _joinFilterRange = 10;			// The maximum gap between filtered characters before the whole segment is filtered
 	// Posterior probability calculation options
 	int _ppCalcs = 0;					// Options are 0: closest _ppCalcNumber; 1: longest _ppCalcNumber; -1: all
 	int _ppCalcNumber = 10;
