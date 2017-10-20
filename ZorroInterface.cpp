@@ -152,7 +152,7 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 #if DEBUG_PP == 1
 					out <<"[" << i << ","<< j<<"]";
 #endif
-					if(!InRange(retPP[i][j],-0.001,1.001)) { cout << "\nERROR: obtained a PP of " << retPP[i][j] << " for residue " << j << " in sequence [" << i << "]  " << cpp_seq->at(i).Name(); exit(-1); }
+//					if(!InRange(retPP[i][j],-0.001,1.001)) { cout << "\nERROR: obtained a PP of " << retPP[i][j] << " for residue " << j << " in sequence [" << i << "]  " << cpp_seq->at(i).Name(); exit(-1); }
 					if(retPP[i][j] > 1) { retPP[i][j] = 1.0; }
 					else if(retPP[i][j] < 0) { retPP[i][j] = 0.0; }
 					out << retPP[i][j] << "\t";
