@@ -103,14 +103,31 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 			cout << "\nMaking kmers " << flush;
 			MakeKmers(cpp_seq);
 			cout << "\nCreating collection sets\n" << flush;
+			// Calculate the median sequence length to ensure that some good sequence coverage is possible
+			vector <int> lengths;
+			for(auto &s : *cpp_seq) { lengths.push_back(s.length()); }
+			sort(lengths.begin(),lengths.end());
+			int median_length = lengths[lengths.size() / 2]; 							// The median length
+			int reqOverMedian = (0.3 * my_min(options->PPnumber(),cpp_seq->size()));	// The number of sequences that must be over the median length
+			// Now get the run list
 			int **runList = new int*[cpp_seq->size()];
 			for(int i = 0; i < cpp_seq->size(); i++) {
-				vector <int> list = GetClosest(i, options->PPnumber(),cpp_seq);
+				int numOverMedian = reqOverMedian, pos = 0;
+				vector <int> list = GetClosest(i, cpp_seq);
+				int listSize = my_min(options->PPnumber(),list.size());
 				ProgressSpinner(i, cpp_seq->size());
-				runList[i] = new int[list.size()+1];
-				if(rLsize < 0) { rLsize = list.size(); }
-				else if(rLsize != list.size()) { cout << "\nProblem with different sized lists of running groups..."; }
-				for(int j = 0; j < list.size(); j++) { runList[i][j] = list[j]; }
+				runList[i] = new int[listSize+1];
+				if(rLsize < 0) { rLsize = listSize; }
+				else if(rLsize != listSize) { cout << "\nProblem with different sized lists of running groups..."; }
+				// Complex logic that picks the closest, while ensure at least reqOverMedian sequences are of at least median size
+				for(int j = 0; j < list.size() && listSize > 0; j++) {
+					if(numOverMedian <= 0 || listSize > numOverMedian || cpp_seq->at(list[j]).length() > median_length) {
+						if(cpp_seq->at(list[j]).length() >= median_length) { numOverMedian --; }
+						runList[i][pos++] = list[j];
+						listSize--;
+					}
+				}
+				if(listSize != 0) { cout << "\nERROR: Failed to build a suitable set of PPs to sample for sequence["<<i<<"] " << cpp_seq->at(i).Name() << "\n\n";exit(-1); }
 			}
 			assert(rLsize > 0);
 			cout << " ... done\nGetting posterior probabilities:\n";
@@ -196,7 +213,7 @@ void extractKmers(string& seq, unordered_map<string, short>* umap)
 	}
 }
 
-vector <int> GetClosest(int Sequence, int NumberClosest, vector <CSequence> *data) {
+vector <int> GetClosest(int Sequence, vector <CSequence> *data) {
 	vector <double> dist = MakeKmerDistanceRow(Sequence, data);
 	vector <int> indices = ordered(dist);
 	for(int i = 0; i < indices.size(); i++) {
@@ -204,9 +221,6 @@ vector <int> GetClosest(int Sequence, int NumberClosest, vector <CSequence> *dat
 			indices.erase(indices.begin() + i);
 			break;
 		}
-	}
-	if(indices.size() > NumberClosest) {
-		indices.erase(indices.begin() + NumberClosest, indices.end());
 	}
 	return indices;
 }

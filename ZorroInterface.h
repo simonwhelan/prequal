@@ -25,7 +25,7 @@ void MakeKmers(std::vector <CSequence> *cpp_seqs);
 void extractKmers(std::string& seq, std::unordered_map<std::string,short>* umap);
 std::vector <double> MakeKmerDistanceRow(int CurSeq, std::vector <CSequence> *data);
 unsigned int commonKmerCount(unsigned int i, unsigned int j);
-std::vector <int> GetClosest(int Sequence, int NumberClosest, std::vector <CSequence> *data);
+std::vector <int> GetClosest(int Sequence, std::vector <CSequence> *data);
 
 
 #endif /* ZORROINTERFACE_H_ */

@@ -43,8 +43,8 @@ COptions::COptions(int argc, char *argv[]) {
 					cout << "\n\t-corefilter X    \t: The character outputted in the core for the  filtered alignment [DEFAULT is "<< CoreFilter() << "]";
 					cout << "\n\nOptions affecting output formats:";
 					cout << "\n\t-outsuffix X     \t: Output file will be the original name with X as a suffix [DEFAULT " << OutSuffix() << "]";
-					cout << "\n\t-dosummary X     \t: Output summary statistics to file suffixed with X [if no X then DEFAULT " << SummarySuffix() << "]";
-					cout << "\n\t-dodetail X      \t: Output detailed statistics to file suffixed with X [if no X then DEFAULT " << DetailSuffix() << "]";
+					cout << "\n\t-dosummary       \t: Output summary statistics to file suffixed with " << SummarySuffix();
+					cout << "\n\t-dodetail        \t: Output detailed statistics to file suffixed with " << DetailSuffix();
 					cout << "\n\t-noPP            \t: Stop outputting the posterior probability matrix";
 					cout << "\n\nOptions affecting posterior probabilities and filtering:";
 					cout << "\n\t-pptype X [Y]       \t: Specify the algorithm used to calculate posterior probabilities\n\t\t\t\t\tX = all : for all against all sequence comparisons";
@@ -104,22 +104,8 @@ COptions::COptions(int argc, char *argv[]) {
 			}
 		} else if (strcmp(argv[i], "-dosummary") == 0) {
 			_doSummary = true;
-			if (argv[i + 1][0] != '-') {
-				continue;
-			}
-			_summarySuffix = argv[++i];
-			if (_summarySuffix.size() < 1) {
-				cout << "\nMust specify a meaningful summary suffix";
-			}
 		} else if (strcmp(argv[i], "-dodetail") == 0) {
 			_doDetail = true;
-			if (argv[i + 1][0] != '-') {
-				continue;
-			}
-			_detailSuffix = argv[++i];
-			if (_detailSuffix.size() < 1) {
-				cout << "\nMust specify a meaningful detail suffix";
-			}
 		} else if (strcmp(argv[i], "-noPP") == 0) {
 			_doPPs = false;
 		}

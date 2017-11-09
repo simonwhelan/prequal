@@ -82,7 +82,9 @@ int main(int argc, char * argv[]) {
 		detail_out.close();
 		cout << " ... done" << flush;
 	}
-
+	if(options->DoSummary()) {
+		cout << "\n\tDoing summary output to " << options->Infile() << options->SummarySuffix() << flush;
+	}
 	cout << "\n\tOutputting filtered sequences to " << options->Infile() << options->OutSuffix();
 	int total_char = 0;
 	int output_char = 0;
@@ -91,8 +93,11 @@ int main(int argc, char * argv[]) {
 	for(int i = 0; i < data->size(); i++) {
 		total_char += data->at(i).length();
 		if(data->at(i).AllRemoved()) {
-			cout << "\n\tFULLY REMOVED SEQUENCE: " << data->at(i).Name();
+			cout << "\n\tWARNING: Fully removed sequence [ "<<i<<"] " << data->at(i).Name();
 			continue;
+		}
+		if(data->at(i).PropRemoved > 0.25) {
+			cout << "\n\tWARNING " << data->at(i).PropRemoved * 100 << "% of sequence removed for ["<<i<<"] " << data->at(i).Name();
 		}
 		output_seq++;
 		sequence_out << ">" << data->at(i).Name() << endl;
@@ -111,7 +116,6 @@ int main(int argc, char * argv[]) {
 	sequence_out.close();
 
 	if(options->DoSummary()) {
-		cout << "\n\tDoing summary output to " << options->Infile() << options->SummarySuffix() << flush;
 		ofstream summary_out(options->Infile() + options->SummarySuffix());
 		summary_out << std::fixed;
 		summary_out << std::setprecision(4);
