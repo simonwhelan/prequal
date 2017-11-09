@@ -20,7 +20,7 @@
 
 /////////////// General naming stuff
 const std::string PROGRAM_NAME = "seqfilter";
-const std::string VERSION_NUMBER = "0.02a";
+const std::string VERSION_NUMBER = "0.03a";
 #define DEFAULT_THRESHOLD 0.99
 
 // Class holding the options for the program. Implemented in Options.cpp
