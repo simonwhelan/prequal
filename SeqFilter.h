@@ -21,6 +21,7 @@
 /////////////// General naming stuff
 const std::string PROGRAM_NAME = "seqfilter";
 const std::string VERSION_NUMBER = "0.02a";
+#define DEFAULT_THRESHOLD 0.99
 
 // Class holding the options for the program. Implemented in Options.cpp
 class COptions {
@@ -42,13 +43,16 @@ public:
 	int RunBeforeInside() { return _runBeforeInside; }
 	bool Remove2Core() { return _remove2Core; }
 	bool RemoveAll() { return _removeAll; }
-	char CoreFilter() { return _coreFilter; }
+	char CoreFilter() {
+		if(_removeAll) {return '\0'; }		// RemoveAll is equivalent of a null for the CoreFilter character
+		return _coreFilter;
+	}
 	// 3. Filtering options
 	bool IgnoreSequence(std::string seq_name) {
 		if(_noFilterList.empty() && _noFilterWord.empty()) { return false; }
-		if(find(_noFilterList.begin(), _noFilterList.end(),seq_name) != _noFilterList.end()) { std::cout << "\nSequence filtered: " << seq_name; return true; }
-		for(int i = 0; i < _noFilterWord.size(); i++) {
-			if(seq_name.find(_noFilterWord[i]) != std::string::npos) { std::cout << "\nWord filtered " << seq_name; return true; }
+		if(find(_noFilterList.begin(), _noFilterList.end(),seq_name) != _noFilterList.end()) { return true; }
+		for(auto &w : _noFilterWord) {
+			if(seq_name.find(w) != std::string::npos) { return true; }
 		}
 		return false;
 	}
@@ -75,9 +79,9 @@ private:
 	// File handling
 	std::string _inputFile;
 	std::string _outputSuffix = ".filtered";
-	bool _doSummary = true;				// General summary
+	bool _doSummary = false;				// General summary
 	std::string _summarySuffix = ".summary";
-	bool _doDetail = true;				// Detailed output per site
+	bool _doDetail = false;				// Detailed output per site
 	std::string _detailSuffix = ".detail";
 	bool _doPPs = true;					// Grid of PPs for fast downstream computation
 	std::string _ppSuffix = ".PP";
@@ -85,7 +89,7 @@ private:
 	std::vector <std::string> _noFilterList;		// List of taxa names that will not be filtered at all
 	std::vector <std::string> _noFilterWord;		// List of taxa regular expressions that will not be filtered at all
 	double _keepProportion = 0.95;		// The proportion of residues to be kept
-	double _filterThreshold = 0.99;		// Hard set the filter threshold
+	double _filterThreshold = DEFAULT_THRESHOLD;		// Hard set the filter threshold
 	int _joinFilterRange = 10;			// The maximum gap between filtered characters before the whole segment is filtered
 	// Posterior probability calculation options
 	int _ppCalcs = 0;					// Options are 0: closest _ppCalcNumber; 1: longest _ppCalcNumber; -1: all

@@ -12,7 +12,11 @@
 using namespace::std;
 
 COptions::COptions(int argc, char *argv[]) {
-
+	bool setThresh = false, setProp = false;
+	cout << "----------------------------------------------------\n\t"
+			<< PROGRAM_NAME << " v." << VERSION_NUMBER
+			<< "  by Simon Whelan"
+			<< "\n----------------------------------------------------";
 	// Check basic input is matched
 	if (argc < 2) {
 		cout << "Incorrect command line. Usage: \n\t" << PROGRAM_NAME << " [options] input_file\n\t-h [all] for [full] options\n";
@@ -29,10 +33,6 @@ COptions::COptions(int argc, char *argv[]) {
 	}
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-h") == 0) {
-			cout << "----------------------------------------------------\n\t"
-					<< PROGRAM_NAME << " v." << VERSION_NUMBER
-					<< "\n\t\tWritten by Simon Whelan"
-					<< "\n----------------------------------------------------";
 			if(i + 1 < argc) {
 				if(strcmp(argv[i+1],"all") == 0) {
 					cout << "\n\nOptions affecting the core region and filtering:";
@@ -67,7 +67,7 @@ COptions::COptions(int argc, char *argv[]) {
 			cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 			cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
 			cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file";
-			cout << "\nTypical usage:\n\t " << PROGRAM_NAME << " -filterpror 0.85 input_file\n\n";
+			cout << "\nTypical usage:\n\t " << PROGRAM_NAME << " -filterprop 0.85 input_file\n\n";
 			exit(-1);
 		}
 		/////////// Core stuff
@@ -155,9 +155,9 @@ COptions::COptions(int argc, char *argv[]) {
 			_noFilterList = GetStringList(argv[++i]);
 			cout << "\nFilter list consists of " << _noFilterList.size()
 					<< " entries";
-		} else if (strcmp(argv[i], "-nofilterregex") == 0) {
+		} else if (strcmp(argv[i], "-nofilterword") == 0) {
 			if (i + 1 == argc) {
-				cout << "\nError when definining -nofilterregex. Specify a file afterwards\n";
+				cout << "\nError when definining -nofilterword. Specify a file afterwards\n";
 				exit(-1);
 			}
 			_noFilterWord = GetStringList(argv[++i]);
@@ -173,10 +173,10 @@ COptions::COptions(int argc, char *argv[]) {
 				cout << "\nError when defining -filterthresh. Specify a valid number (0,1) afterwards\n";
 				exit(-1);
 			}
+			setThresh = true;
 		} else if (strcmp(argv[i], "-filterprop") == 0) {
 			if (_filterThreshold > 0) {
-				cout << "\nCannot set -filterprop and -filterthresh at the same time.\n";
-				exit(-1);
+				_filterThreshold *= -1;	// Turn off the threshold
 			}
 			if (i + 1 < argc) {
 				_keepProportion = atof(argv[++i]);
@@ -187,6 +187,7 @@ COptions::COptions(int argc, char *argv[]) {
 				cout << "\nError when defining -filterprop. Specify a valid number (0,1) afterwards\n";
 				exit(-1);
 			}
+			setProp = true;
 		} else if (strcmp(argv[i], "-filterjoin") == 0) {
 			if (i + 1 < argc) {
 				_joinFilterRange = atof(argv[++i]);
@@ -209,6 +210,9 @@ COptions::COptions(int argc, char *argv[]) {
 		}
 
 	}
+	if(setThresh && setProp) {
+		cout << "\nERROR: user defined both filter threshold and a filter proportion in commandline?\n\n"; exit(-1);
+	}
 }
 
 vector<string> COptions::GetStringList(string FilterListFile) {
@@ -225,6 +229,7 @@ vector<string> COptions::GetStringList(string FilterListFile) {
 			continue;
 		}
 		line = RemoveWhiteSpace(line);
+		if(line[0] == '>') { line = line.substr(1); } // Skip the first character if it's a '>' from fasta format
 		FilterList.push_back(line);
 	}
 	return FilterList;

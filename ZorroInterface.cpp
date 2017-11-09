@@ -50,8 +50,6 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 	// Initialise the Zorro stuff
 	InitialiseZorro(cpp_seq);
 
-	cout << "\nInitialised based on: " << cpp_seq->size() << "... with "<< CSequence::MaxLength() << flush;
-
 	// If file exists read the PPs
 	if(file_exist(outFile) && !forceOverwrite) {
 		cout << "\nPosterior probability file <" << outFile << "> exists. \n\tReading file";
@@ -108,7 +106,7 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 			int **runList = new int*[cpp_seq->size()];
 			for(int i = 0; i < cpp_seq->size(); i++) {
 				vector <int> list = GetClosest(i, options->PPnumber(),cpp_seq);
-				ProgressSpinner(i);
+				ProgressSpinner(i, cpp_seq->size());
 				runList[i] = new int[list.size()+1];
 				if(rLsize < 0) { rLsize = list.size(); }
 				else if(rLsize != list.size()) { cout << "\nProblem with different sized lists of running groups..."; }

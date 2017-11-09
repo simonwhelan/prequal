@@ -11,9 +11,6 @@
  *      //
  *
  *      Current idea list:
- *       * Run together removed regions, for example XXXARGNDEXXX -> XXXXXXXXXXXX so frameshifts are better caught
- *       * Beginning and end regions are too generous -- user should define run_inside
- *       * Need a full set of options and the beginning of documentation
  *       * Store bounds for particular sequences in the pairHMM so custom bounds are internalised and multiple calls are not needed.
  */
 
@@ -42,7 +39,7 @@ int main(int argc, char * argv[]) {
 	// Read data and sort initialisation
 	data = FASTAReader(options->Infile()); // Reads the sequences
 	cout << "\nThere are " << data->size() << " sequences of max length " << CSequence::MaxLength();
-	//	for(int i = 0; i < data->size(); i++) { cout << "\ni=" << i << "\t" << data->at(i).out(); }
+//	for(int i = 0; i < data->size(); i++) { cout << "\ni=" << i << "\t" << data->at(i).out(); }
 
 	// Run the HMM if needed
 	PP = RunHMM(data,options->Infile() + options->OutSuffix() + options->PPSuffix(), options->Overwrite_PP());
@@ -50,11 +47,10 @@ int main(int argc, char * argv[]) {
 	// Define the threshold
 	if (options->DoKeepProportion()) {
 		cout << "\n\nExamining posterior probabilities to determine appropriate thresholds to retain " << options->KeepProportion() * 100 << "% of sequence" << flush;
-	}
-	threshold = TargetCutoff(options->KeepProportion());
-	if(!options->DoKeepProportion()) {
+		threshold = TargetCutoff(options->KeepProportion());
+	} else {
 		threshold = options->KeepThreshold();
-		cout << "\n\nThreshold set to input value of " << threshold;
+		if(threshold != DEFAULT_THRESHOLD) { cout << "\n\nThreshold set to " << threshold << flush; }
 	}
 	assert(InRange(threshold, 0.0, 1.0));
 
@@ -86,6 +82,34 @@ int main(int argc, char * argv[]) {
 		detail_out.close();
 		cout << " ... done" << flush;
 	}
+
+	cout << "\n\tOutputting filtered sequences to " << options->Infile() << options->OutSuffix();
+	int total_char = 0;
+	int output_char = 0;
+	int output_seq = 0;
+	ofstream sequence_out(options->Infile() + options->OutSuffix());
+	for(int i = 0; i < data->size(); i++) {
+		total_char += data->at(i).length();
+		if(data->at(i).AllRemoved()) {
+			cout << "\n\tFULLY REMOVED SEQUENCE: " << data->at(i).Name();
+			continue;
+		}
+		output_seq++;
+		sequence_out << ">" << data->at(i).Name() << endl;
+		// The filtered style sequence determined by the CSequence class with some added counting stuff
+		string output = data->at(i).Seq();
+		for(int j = 0; j < output.size(); j++) { if(output[j] != options->CoreFilter()) { output_char ++; } }
+		sequence_out << output << endl;
+	}
+	cout << "\n\nComputation complete";
+	// Make nice summary of information
+	cout << "\n\n===================== Summary ======================";
+	cout << "\n              " << std::setw(12) << "Original" << std::setw(12) << "Filtered" << std::setw(12) << "%Retained";
+	cout << "\n#Sequences    " << std::setw(12) << data->size() << std::setw(12) << output_seq << std::setw(12) << std::setprecision(3) << 100 * (double)output_seq/(double)data->size() << "%";
+	cout << "\n#Residues     " << std::setw(12) << total_char << std::setw(12) << output_char << std::setw(12) << std::setprecision(3) << 100 * (double)output_char/(double)total_char << "%";
+	cout << "\n\n";
+	sequence_out.close();
+
 	if(options->DoSummary()) {
 		cout << "\n\tDoing summary output to " << options->Infile() << options->SummarySuffix() << flush;
 		ofstream summary_out(options->Infile() + options->SummarySuffix());
@@ -114,39 +138,14 @@ int main(int argc, char * argv[]) {
 		for(int i = 0; i < data->size(); i++) {
 			summary_out << "\n["<<i<<"] " << data->at(i).Name() << " has " << data->at(i).PropRemoved * 100 << "% removed and " << data->at(i).PropInside* 100 << "% in the core";
 		}
+		// Make nice summary of information
+		summary_out << "\n\n===================== Summary ======================";
+		summary_out << "\n              " << std::setw(12) << "Original" << std::setw(12) << "Filtered" << std::setw(12) << "%Retained";
+		summary_out << "\n#Sequences    " << std::setw(12) << data->size() << std::setw(12) << output_seq << std::setw(12) << std::setprecision(3) << 100 * (double)output_seq/(double)data->size() << "%";
+		summary_out << "\n#Residues     " << std::setw(12) << total_char << std::setw(12) << output_char << std::setw(12) << std::setprecision(3) << 100 * (double)output_char/(double)total_char << "%";
+		summary_out << "\n\n";
 		summary_out.close();
 	}
-	cout << "\n\tOutputting filtered sequences to " << options->Infile() << options->OutSuffix();
-	int total_char = 0;
-	int output_char = 0;
-	int output_seq = 0;
-	ofstream sequence_out(options->Infile() + options->OutSuffix());
-	for(int i = 0; i < data->size(); i++) {
-		total_char += data->at(i).length();
-		if(data->at(i).AllRemoved()) {
-			cout << "\n\tFULLY REMOVED SEQUENCE: " << data->at(i).Name();
-			continue;
-		}
-		output_seq++;
-		sequence_out << ">" << data->at(i).Name() << endl;
-		// The whole sequence when filtered
-		if(options->IgnoreSequence(data->at(i).Name())) {
-			output_char += data->at(i).length();
-			sequence_out << data->at(i).Seq();
-			continue;
-		}
-		// The filtered style sequence determined by the CSequence class with some added counting stuff
-		string output = data->at(i).Seq();
-		for(int j = 0; j < output.size(); j++) { if(output[j] != options->CoreFilter()) { output_char ++; } }
-		sequence_out << output << endl;
-	}
-	// Make nice summary of information
-	cout << "\n\n=================== Summary ===================";
-	cout << "\n              " << std::setw(8) << "Original" << std::setw(10) << "Filtered" << std::setw(10) << "%Retained";
-	cout << "\n#Sequences    " << std::setw(8) << data->size() << std::setw(10) << output_seq << std::setw(9) << std::setprecision(3) << 100 * (double)output_seq/(double)data->size() << "%";
-	cout << "\n#Residues     " << std::setw(8) << total_char << std::setw(10) << output_char << std::setw(9) << std::setprecision(3) << 100 * (double)output_char/(double)total_char << "%";
-	cout << "\n\nComplete\n";
-	sequence_out.close();
 
 	// Clean up memory
 	for(int i = 0; i < data->size(); i++) { delete [] PP[i];  } delete [] PP;
@@ -184,8 +183,11 @@ void DoFiltering(double threshold) {
 	cout << "\n\nPerforming filtering";
 	cout << "\n\tApplying standard threshold " << threshold;
 	int thresholdCount = 0;
+	int ignoreCount = 0;
 	// Apply the threshold in a simple way
 	for (int i = 0; i < data->size(); i++) {
+		// 1. Skip sequences on the filter lists
+		if(options->IgnoreSequence(data->at(i).Name())) { ignoreCount++; continue; }
 		// 2. Find the residues to be filtered
 		//		cout << " filtered residues ..." << flush;
 		for (int j = 0; j < data->at(i).length(); j++) {
@@ -251,6 +253,7 @@ void DoFiltering(double threshold) {
 	for(int i = 0; i < data->size(); i++) {
 		data->at(i).CalculateSummary();
 	}
+	if(ignoreCount > 0) { cout << "\n\tThere were " << ignoreCount << " sequences ignored by filtering due to word/name lists"; }
 	cout << "\n\t... done" << flush;
 }
 

@@ -149,11 +149,12 @@ int BOUND_SIZE = 50;
 
 // Dumb function for progress spinner
 
-void ProgressSpinner(int suffix) {
+void ProgressSpinner(int suffix, int total) {
 	static int count = 0;
 	static char progress_spinner [] = "/-\\|";
 	printf("\r%c",progress_spinner[count++]);
 	if(suffix >= 0) { printf(" %d",suffix); }
+	if(total >= 0) { printf(" / %d", total); }
 	fflush(stdout);
 	if(count == 4) { count = 0; }
 }
@@ -187,7 +188,7 @@ bool SimonGetPosteriors(int len, double **retPosteriors, bool doApprox, int appr
 //	printf("\nCollecting all posterior probabilities\n");
 	for (i = 0; i < Nseq; i++) {
 		for (j = i + 1; j < Nseq; j++) {
-			ProgressSpinner(i + 1);
+			ProgressSpinner(i + 1,Nseq);
 			RunMakePosteriors(i,j,doApprox, approxSize);
 		}
 	}
@@ -221,14 +222,13 @@ bool SimonGetSubsetPosteriors(int len, double **retPosteriors, int **runList, in
 	}
 //	printf("\nCollecting subset of posterior probabilities\n");
 	for (int i = 0; i < Nseq; i++) {
-		ProgressSpinner(i + 1);
+		ProgressSpinner(i + 1, Nseq);
 		for (int k = 0; k < my_min(runListLength,Nseq); k++) {
 			int j = runList[i][k];
 			assert(j >= 0 && j < Nseq);
 			if (j == i) {
 				continue;
 			}
-			ProgressSpinner(i + 1);
 			RunMakePosteriors(i, j, doApprox, ApproxSize);
 		}
 	}

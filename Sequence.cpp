@@ -37,13 +37,13 @@ std::string CSequence::Seq(int pos, bool filter, bool showOutside) {
 	std::stringstream ss;
 	if(pos != -1) {
 		if(!showOutside && !Inside[pos]) { ss << "0"; }
-		else if(filter && Remove[pos]) { ss <<_filterOut; }
+		else if(filter && Remove[pos]) { if(_filterOut != '\0') { ss <<_filterOut; } }
 		else { ss << _seq[pos]; }
 
 	} else {
 		for( int i = 0 ; i < _seq.size(); i++) {
 			if(!showOutside && !Inside[i]) { continue; }
-			if(filter && Remove[i]) { ss <<_filterOut; }
+			if(filter && Remove[i]) { if(_filterOut != '\0') { ss <<_filterOut; } }
 			else { ss << _seq[i]; }
 		}
 	}
@@ -76,7 +76,8 @@ std::vector <CSequence> *FASTAReader(std::string SeqFile) {
 
     while(getline( input, line ) ){
     	line = RemoveWhiteSpace(line);
-        if( line.empty() || line[0] == '>' ){ // Identifier marker
+    	if(line.empty()) { continue; }		// Skip blank lines
+        if(line[0] == '>' ){ // Identifier marker
             if( !line.empty() ){
             	if(!name.empty()) { // Push the sequence back
             		RetSeq->push_back(CSequence(RemoveWhiteSpace(name),RemoveWhiteSpace(content)));
@@ -86,12 +87,7 @@ std::vector <CSequence> *FASTAReader(std::string SeqFile) {
             }
             content.clear();
         } else if( !name.empty() ){
-            if( line.find(' ') != std::string::npos ){ // Invalid sequence--no spaces allowed
-                name.clear();
-                content.clear();
-            } else {
-                content += line;
-            }
+            content += RemoveWhiteSpace(line);
         }
     }
     // Add the final sequence
