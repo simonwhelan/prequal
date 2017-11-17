@@ -60,6 +60,30 @@ bool CSequence::Filter(int pos) {
 	return false;
 }
 
+// Function that examines a sequence and looks for self repeats
+// ---
+// This might be better served by a suffix tree implementation, but I'm just doing the dumb thing for now
+bool CSequence::CleanRepeat(int repeatLength) {
+	string seq = _seq;
+	bool foundRepeat = false;
+	int end;
+	for(int pos = 0; pos < seq.size() - repeatLength; pos ++) {
+		string repeat = seq.substr(pos,repeatLength);
+		size_t next_pos= pos + repeatLength;
+		while(next_pos != string::npos) {
+			next_pos = seq.find(repeat,next_pos);
+			if(next_pos == string::npos) { break; }
+			foundRepeat=true;
+			for(end = 0; end < seq.size() - repeatLength - next_pos; end++) { // Extend the repeat while there is perfect match
+				if(seq[pos + end + repeatLength] != seq[next_pos + end + repeatLength]) { break; }
+			}
+			seq.erase(next_pos,repeatLength + end);
+		}
+	}
+	if(foundRepeat) { _seq = seq; }
+	return foundRepeat;
+}
+
 
 /////////////// Minor functions
 // File reader

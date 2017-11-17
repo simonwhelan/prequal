@@ -66,7 +66,7 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 		for(int i = 0 ;i < cpp_seq->size(); i++) {
 			tmp = read_line(in);
 			Toks = Tokenise(tmp);
-			if(Toks.size() != 1) { cout << "\nName of sequence " << i << " has white spaces. This is not allowed\n"; exit(-1); }
+			if(Toks.size() != 1) { cout << "\nName of sequence " << i << " has white spaces. This is not allowed.\n"; exit(-1); }
 			if(Toks[0] != cpp_seq->at(i).Name()) { cout << "\nName of sequence " << i << " does not match that in data. This is not allowed\n"; exit(-1); }
 		}
 		cout << " ... checking PPs" << flush;
@@ -75,7 +75,7 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 		for(int i = 0 ;i < cpp_seq->size(); i++) {
 			tmp = read_line(in);
 			Toks = Tokenise(tmp);
-			if(Toks.size() != cpp_seq->at(i).length()) { cout << "\nLength of sequence " << i << " does not match PPs. This is not allowed\n"; exit(-1); }
+			if(Toks.size() != cpp_seq->at(i).length()) { cout << "\nLength of sequence " << i << " does not match PPs. This is not allowed and can be caused by repeat masking.\n\tTry removing PP file?\n"; exit(-1); }
 			for(int j = 0; j < cpp_seq->at(i).length(); j ++) {
 				value = (double) atof(Toks[j].c_str());
 				if(value < 0.0 || value > 1.0) { cout << "\nThe PPs for sequence " << i << " contains a non probability (" << value<< ")"; exit(-1); }
@@ -115,7 +115,7 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 				int numOverMedian = reqOverMedian, pos = 0;
 				vector <int> list = GetClosest(i, cpp_seq);
 				int listSize = my_min(options->PPnumber(),list.size());
-				ProgressSpinner(i, cpp_seq->size());
+				ProgressSpinner(i + 1, cpp_seq->size());
 				runList[i] = new int[listSize+1];
 				if(rLsize < 0) { rLsize = listSize; }
 				else if(rLsize != listSize) { cout << "\nProblem with different sized lists of running groups..."; }

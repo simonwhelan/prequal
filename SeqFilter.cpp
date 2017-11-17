@@ -9,6 +9,9 @@
  *      Main functions for performing filtering
  *
  *      //
+ *		TODO Check filterword list is working as intended
+ *		TODO Repeat sequences
+ *
  *
  *      Current idea list:
  *       * Store bounds for particular sequences in the pairHMM so custom bounds are internalised and multiple calls are not needed.
@@ -27,6 +30,7 @@ using namespace::std;
 vector <CSequence> *data = NULL;
 double **PP = NULL;
 COptions *options = NULL;			// Global options; would be better as a singleton, but this works
+stringstream warningStream;
 
 int main(int argc, char * argv[]) {
 
@@ -40,6 +44,24 @@ int main(int argc, char * argv[]) {
 	data = FASTAReader(options->Infile()); // Reads the sequences
 	cout << "\nThere are " << data->size() << " sequences of max length " << CSequence::MaxLength();
 //	for(int i = 0; i < data->size(); i++) { cout << "\ni=" << i << "\t" << data->at(i).out(); }
+
+	// Do the repeat filtering if required
+	bool repeated = false;
+	if(options->RemoveRepeat()) {
+		for(int i = 0; i < data->size(); i++) {
+			if(options->IgnoreSequence(data->at(i).Name())) { continue; }
+			int oriLength = data->at(i).length();
+			if(data->at(i).CleanRepeat(options->RepeatLength())) {
+				repeated = true;
+				warningStream << "\nWARNING: repeat found in sequence["<<i<<"] " << data->at(i).Name();
+				warningStream << "\n\tLength changed from " << oriLength << " -> " << data->at(i).length();
+			}
+		}
+	}
+	if(repeated) {
+		CSequence::ResetMaxLength(data);
+		warningStream << "\nWARNING: Repeats found. If you do not want them removed us -noremoverepeat option";
+	}
 
 	// Run the HMM if needed
 	PP = RunHMM(data,options->Infile() + options->OutSuffix() + options->PPSuffix(), options->Overwrite_PP());
@@ -93,11 +115,11 @@ int main(int argc, char * argv[]) {
 	for(int i = 0; i < data->size(); i++) {
 		total_char += data->at(i).length();
 		if(data->at(i).AllRemoved()) {
-			cout << "\n\tWARNING: Fully removed sequence [ "<<i<<"] " << data->at(i).Name();
+			warningStream << "\nWARNING: Fully removed sequence [ "<<i<<"] " << data->at(i).Name();
 			continue;
 		}
 		if(data->at(i).PropRemoved > 0.25) {
-			cout << "\n\tWARNING " << data->at(i).PropRemoved * 100 << "% of sequence removed for ["<<i<<"] " << data->at(i).Name();
+			warningStream << "\nWARNING: " << data->at(i).PropRemoved * 100 << "% of sequence removed for ["<<i<<"] " << data->at(i).Name();
 		}
 		output_seq++;
 		sequence_out << ">" << data->at(i).Name() << endl;
@@ -106,7 +128,9 @@ int main(int argc, char * argv[]) {
 		for(int j = 0; j < output.size(); j++) { if(output[j] != options->CoreFilter()) { output_char ++; } }
 		sequence_out << output << endl;
 	}
-	cout << "\n\nComputation complete";
+	cout << "\n\nComputation complete\n";
+	// Output any warnings in an obvious place;
+	cout << warningStream.str();
 	// Make nice summary of information
 	cout << "\n\n===================== Summary ======================";
 	cout << "\n              " << std::setw(12) << "Original" << std::setw(12) << "Filtered" << std::setw(12) << "%Retained";

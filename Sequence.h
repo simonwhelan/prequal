@@ -41,7 +41,14 @@ public:
 	std::string Seq(int pos = -1, bool filter = true, bool showOutside = false);		// Output the sequence (or pos i of sequence)
 	std::string Name() { return _name; }
 	bool Filter(int pos);						// Whether pos should be filtered/removed in any way
-
+	// Checks whther a sequence has a repeat; Filter = whether to set for removal; repeatLength = number of characters specified for repeat
+	bool CleanRepeat(int repeatLength = 20);
+	// Resets the maxLength if needed
+	static void ResetMaxLength(std::vector <CSequence> *seqs) {
+		_maxLength = 0;
+		for(auto &seq : *seqs) { if(seq.length() > _maxLength) { _maxLength = seq.length(); } }
+	};
+	// Output stuff
 	std::string out() { return _name + " " + _seq; }
 	void CalculateSummary() {
 		int in = 0, rem = 0;

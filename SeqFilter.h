@@ -69,13 +69,17 @@ public:
 	// 5. Approximations for pairHMM calculations
 	bool DoApprox() { return _approxPP; }
 	int DefaultBound() { return 25; }
-
+	// 6. Repeat handling
+	bool RemoveRepeat() { return _removeRepeat; }
+	int RepeatLength() { return _repeatLength; }
 private:
 	// Behaviour defining core and how the different parts are treated/filtered
 	int _runBeforeInside = 3;			// Number of positively defined homologies before a sequence is consider part of the core
 	bool _remove2Core = true;			// Whether parts outside the core are removed
 	bool _removeAll = false;			// Whether all fails are removed
 	char _coreFilter = 'X';			// The character used for filtering in the core
+	bool _removeRepeat = true;			// Whether repeats are classified as removed prior to analysis
+	int _repeatLength = 20;				// The default length to specify a repeat
 	// File handling
 	std::string _inputFile;
 	std::string _outputSuffix = ".filtered";
