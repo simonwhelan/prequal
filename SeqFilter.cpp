@@ -166,6 +166,8 @@ int main(int argc, char * argv[]) {
 		for(int i = 0; i < data->size(); i++) {
 			summary_out << "\n["<<i<<"] " << data->at(i).Name() << " has " << data->at(i).PropRemoved * 100 << "% removed and " << data->at(i).PropInside* 100 << "% in the core";
 		}
+		// Make a nice table of the RHS of the PP distribution
+		TargetCutoff(0.1,summary_out);
 		// Make nice summary of information
 		summary_out << "\n\n===================== Summary ======================";
 		summary_out << "\n              " << std::setw(12) << "Original" << std::setw(12) << "Filtered" << std::setw(12) << "%Retained";
@@ -182,7 +184,7 @@ int main(int argc, char * argv[]) {
 
 
 // Returns the cutoff based on the empirical set of PPs in PP[][]
-double TargetCutoff(double prop2Keep) {
+double TargetCutoff(double prop2Keep, ostream &os) {
 	int total_length = 0;
 	vector <double> tmp_PP;
 	for(int i = 0; i < data->size(); i++)  {
@@ -193,15 +195,15 @@ double TargetCutoff(double prop2Keep) {
 	}
 	std::sort(tmp_PP.begin(),tmp_PP.end());
 	int count_stop;
-	cout << "\n\nHelpful cut-offs ([PropRetained] Cutoffs):";
-	cout << std::fixed;
-	cout << std::setprecision(4);
+	os << "\n\nHelpful cut-offs ([PropRetained] Cutoffs):";
+	os << std::fixed;
+	os << std::setprecision(4);
 
 	int spacer = 5;
 	for(double x = 1.0; x >= 0.75; x-= 0.01,spacer ++) {
-		if(spacer >= 5) { cout << "\n"; spacer = 0; }
+		if(spacer >= 5) { os << "\n"; spacer = 0; }
 		count_stop = (int)((1.0 - x) * (double) total_length);
-		cout << "\t[" << x << "] " << tmp_PP[count_stop];
+		os << "\t[" << x << "] " << tmp_PP[count_stop];
 	}
 	count_stop = (int)((1.0 - prop2Keep) * (double) total_length);
 	return tmp_PP[count_stop];

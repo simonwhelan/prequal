@@ -107,7 +107,7 @@ private:
 
 double mean(std::vector <double> vec);
 double stdev(std::vector <double> vec);
-double TargetCutoff(double prop2Keep);							// Computes the target cutoff given a specific proportion to keep
-void DoFiltering(double Threshold);								// Applies the filtering method
+double TargetCutoff(double prop2Keep, std::ostream &os = std::cout);	// Computes the target cutoff given a specific proportion to keep
+void DoFiltering(double Threshold);										// Applies the filtering method
 
 #endif /* SEQFILTER_H_ */

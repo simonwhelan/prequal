@@ -100,9 +100,8 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 		} else if(options->ClosePP()) { // The closest
 			cout << "\nCollecting subset of posterior probabilities based on closest " << options->PPnumber() << " sequences determined by Kmers\n\tThis may take time for larger data sets:\n" << flush;
 			int rLsize = -1;
-			cout << "\nMaking kmers " << flush;
 			MakeKmers(cpp_seq);
-			cout << "\nCreating collection sets\n" << flush;
+			cout << "\nCreating collection sets of PPs based on Kmer distances\n" << flush;
 			// Calculate the median sequence length to ensure that some good sequence coverage is possible
 			vector <int> lengths;
 			for(auto &s : *cpp_seq) { lengths.push_back(s.length()); }
