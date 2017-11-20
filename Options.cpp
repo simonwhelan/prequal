@@ -19,7 +19,7 @@ COptions::COptions(int argc, char *argv[]) {
 			<< "\n----------------------------------------------------";
 	// Check basic input is matched
 	if (argc < 2) {
-		cout << "Incorrect command line. Usage: \n\t" << PROGRAM_NAME << " [options] input_file\n\t-h [all] for [full] options\n";
+		cout << "\n\nIncorrect command line. Usage: \n\t" << PROGRAM_NAME << " [options] input_file\n\t-h [all] for [full] options\n";
 		exit(-1);
 	}
 	// Get the input file
@@ -42,6 +42,9 @@ COptions::COptions(int argc, char *argv[]) {
 					cout << "\n\t-removeall       \t: Remove all residues rather than those outside the core region \n\t\t\t\t\t[DEFAULT residues in core filtered with " << CoreFilter() <<"]";
 					cout << "\n\t-corefilter X    \t: The character outputted in the core for the  filtered alignment [DEFAULT is "<< CoreFilter() << "]";
 					cout << "\n\t-noremoverepeat  \t: Do not remove repeated regions of length >" << _repeatLength << ". Repeats break PPs!";
+					cout << "\n\nOptions dealing with protein coding DNA sequences:";
+					cout << "\n\t-nodna           \t: Enforces banning of dna sequences. The program will fail if only DNA is input.";
+					cout << "\n\t-forceuniversal  \t: Enforces the usage of the universal code. Internal stop codons will be replaced with X for other codes.";
 					cout << "\n\nOptions affecting output formats:";
 					cout << "\n\t-outsuffix X     \t: Output file will be the original name with X as a suffix [DEFAULT " << OutSuffix() << "]";
 					cout << "\n\t-dosummary       \t: Output summary statistics to file suffixed with " << SummarySuffix();
@@ -68,7 +71,7 @@ COptions::COptions(int argc, char *argv[]) {
 			cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 			cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
 			cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file";
-			cout << "\nTypical usage:\n\t " << PROGRAM_NAME << " -filterprop 0.85 input_file\n\n";
+			cout << "\nTypical usage (should do a good job with most sequences):\n\t " << PROGRAM_NAME << " input_file\n\n";
 			exit(-1);
 		}
 		/////////// Core stuff
@@ -94,6 +97,10 @@ COptions::COptions(int argc, char *argv[]) {
 			_coreFilter = argv[++i][0];
 		} else if(strcmp(argv[i], "-noremoverepeat") == 0) {
 			_removeRepeat = false;
+		} else if(strcmp(argv[i], "-nodna") == 0) {
+			_allowDNA = false;
+		} else if(strcmp(argv[i], "-forceuniversal") == 0) {
+			_alwaysUniversal = true;
 		}
 		//////////// File stuff
 		else if (strcmp(argv[i], "-outsuffix") == 0) {

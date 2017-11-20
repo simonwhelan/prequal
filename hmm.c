@@ -252,7 +252,10 @@ void RunMakePosteriors(int X, int Y, bool DoApprox, int ApproxSize) {
 //		printf("\nBound failed on %d - %d comparison", X, Y); fflush(stdout);
 		BOUND_SIZE *= 2;		// Expand the bound on fail
 	}
-	if(i == 5) { printf("\nBounding hard failed...\n"); exit(-1); }
+	if(i == 5) {
+		printf("\nApproximate pairHMM bounding failed on %d - %d comparison. Enforcing complete computation.\n", X, Y);
+		MakePosteriors(X,Y,false);
+	}
 	// Transfer to PP
 	for(i = 0 ; i < lens[X] ; i ++) {
 		if(checkSpaceX[i] > allPosteriors[X][i]) { allPosteriors[X][i] = checkSpaceX[i]; }

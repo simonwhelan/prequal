@@ -41,8 +41,17 @@ int main(int argc, char * argv[]) {
 	vector<double> values;							// Generic vector for moving around values
 
 	// Read data and sort initialisation
-	data = FASTAReader(options->Infile()); // Reads the sequences
+	data = FASTAReader(options->Infile(),options->AlwaysUniversal()); // Reads the sequences
 	cout << "\nThere are " << data->size() << " sequences of max length " << CSequence::MaxLength();
+	// Some error checking with regard to DNA sequences
+	for(auto & seq : *data) {
+		if(seq.HasDNA() && !options->AllowDNA()) {
+			cout << "\nHave a DNA sequence while the -nodna option is active. Exiting...\n\n"; exit(-1);
+		}
+		if(seq.HasDNA() != data->at(0).HasDNA()) {
+			cout << "\nError: potential mix of DNA and amino acid sequences. This is not handled?\n\n"; exit(-1);
+		}
+	}
 //	for(int i = 0; i < data->size(); i++) { cout << "\ni=" << i << "\t" << data->at(i).out(); }
 
 	// Do the repeat filtering if required
@@ -107,19 +116,21 @@ int main(int argc, char * argv[]) {
 	if(options->DoSummary()) {
 		cout << "\n\tDoing summary output to " << options->Infile() << options->SummarySuffix() << flush;
 	}
-	cout << "\n\tOutputting filtered sequences to " << options->Infile() << options->OutSuffix();
+	cout << "\n\tOutputting filtered amino acid sequences to " << options->Infile() << options->OutSuffix();
 	int total_char = 0;
 	int output_char = 0;
 	int output_seq = 0;
+	bool hasDNA = false;
 	ofstream sequence_out(options->Infile() + options->OutSuffix());
 	for(int i = 0; i < data->size(); i++) {
+		if(data->at(i).HasDNA()) { hasDNA = true; }
 		total_char += data->at(i).length();
 		if(data->at(i).AllRemoved()) {
 			warningStream << "\nWARNING: Fully removed sequence [ "<<i<<"] " << data->at(i).Name();
 			continue;
 		}
 		if(data->at(i).PropRemoved > 0.25) {
-			warningStream << "\nWARNING: " << data->at(i).PropRemoved * 100 << "% of sequence removed for ["<<i<<"] " << data->at(i).Name();
+			warningStream << "\nWARNING: " << fixed << setprecision(2) <<  data->at(i).PropRemoved * 100 << "% of sequence removed/missing for ["<<i<<"] " << data->at(i).Name();
 		}
 		output_seq++;
 		sequence_out << ">" << data->at(i).Name() << endl;
@@ -128,9 +139,32 @@ int main(int argc, char * argv[]) {
 		for(int j = 0; j < output.size(); j++) { if(output[j] != options->CoreFilter()) { output_char ++; } }
 		sequence_out << output << endl;
 	}
-	cout << "\n\nComputation complete\n";
-	// Output any warnings in an obvious place;
-	cout << warningStream.str();
+	// If DNA sequences output these and also some translation information
+	if(hasDNA) {
+		string outDNAfile = options->Infile() + ".dna" + options->OutSuffix();
+		cout << "\n\tOutputting filtered DNA sequences to " << outDNAfile;
+		ofstream outDNA(outDNAfile);
+		for(auto &seq : *data) {
+			if(seq.AllRemoved()) { continue; }
+			outDNA << ">" << seq.Name();
+			outDNA << endl << seq.DNA() << endl;
+		}
+		outDNA.close();
+		outDNAfile = options->Infile() + ".translation";
+		cout << "\n\tOutputting DNA translation information to " << outDNAfile;
+		ofstream outTrans(outDNAfile);
+		for(auto &seq : *data) {
+			outTrans << ">" << seq.Name() << " translated using " << seq.GenCode();
+			outTrans << "\n" << seq.RealDNA();
+			outTrans << "\n" << seq.RealSeq() << "\n";
+		}
+		outTrans << "\n\nNOTE: If you are unhappy with some of these translations it is probably because a DNA sequence contains a stop codon"
+				<< "\n  in your preferred genetic code. Try editing the file before you filter. You'll have to delete the .PP file to run again";
+		outTrans.close();
+
+	}
+
+	cout << "\n\nComputation complete";
 	// Make nice summary of information
 	cout << "\n\n===================== Summary ======================";
 	cout << "\n              " << std::setw(12) << "Original" << std::setw(12) << "Filtered" << std::setw(12) << "%Retained";
@@ -176,7 +210,15 @@ int main(int argc, char * argv[]) {
 		summary_out << "\n\n";
 		summary_out.close();
 	}
-
+	// Output warnings if required
+	if(warningStream.rdbuf()->in_avail() != 0) {
+		string warningFile = options->Infile() + ".warning";
+		cout << "Analysis may have some problems. Warnings output to " << warningFile << "\n\n";
+		ofstream warnOut(warningFile);
+		warnOut << warningStream.str();
+		warnOut.close();
+	}
+	cout << "Filtering complete!\n";
 	// Clean up memory
 	for(int i = 0; i < data->size(); i++) { delete [] PP[i];  } delete [] PP;
 	delete data;
@@ -210,7 +252,7 @@ double TargetCutoff(double prop2Keep, ostream &os) {
 }
 
 void DoFiltering(double threshold) {
-	cout << "\n\nPerforming filtering";
+	cout << "\n\nPerforming filtering:";
 	cout << "\n\tApplying standard threshold " << threshold;
 	int thresholdCount = 0;
 	int ignoreCount = 0;
@@ -233,6 +275,7 @@ void DoFiltering(double threshold) {
 		cout << "\n\tExtending filtered regions with width of " << options->FilterRange() << " ";
 		int filter_count = 0;
 		for(int i = 0 ; i < data->size(); i++) {
+			if(options->IgnoreSequence(data->at(i).Name())) { continue; }
 			int lastFilter = 0;
 			for(int j = 0; j < data->at(i).length(); j++) {
 				if(data->at(i).Filter(j)) {
@@ -251,11 +294,11 @@ void DoFiltering(double threshold) {
 		cout << " ... " << filter_count << " additional regions removed" << flush;
 	}
 	// Tidy the front and back
-//	if(false) {
 	if(options->RunBeforeInside() > 0) {
 		cout << "\n\tApplying front/back trimming for runs of " << options->RunBeforeInside();
 		int seqTrimmed = 0;
 		for (int i = 0; i < data->size(); i++) {
+			if(options->IgnoreSequence(data->at(i).Name())) { continue; }
 			// 1. Get the front ...
 			bool DoOutside = false;
 			for(int j = my_min(data->at(i).length(),options->RunBeforeInside())-1; j > 0; j--) {
@@ -284,7 +327,6 @@ void DoFiltering(double threshold) {
 		data->at(i).CalculateSummary();
 	}
 	if(ignoreCount > 0) { cout << "\n\tThere were " << ignoreCount << " sequences ignored by filtering due to word/name lists"; }
-	cout << "\n\t... done" << flush;
 }
 
 double mean(vector <double> vec) {
