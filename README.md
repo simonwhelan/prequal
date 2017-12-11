@@ -1,7 +1,7 @@
-# Seqfilter (Alpha release)
-Written by Simon Whelan
+# PREQUAL - A pre-alignment quality filter
+Written by Simon Whelan in collaboration with Fabien Burki and Iker Irisarri
 
-A program for finding sequencing errors in FASTA files. The following is just the -h all option with some more description. This problem uses extensive code from [Zorro](https://phylogenomics.me/software/zorro/) and [PaHMM-Tree](https://github.com/marbogusz/paHMM-Tree) and is distributed under a GPL v3.0.
+A program to identify and mask regions with non-homologous adjacent characters in FASTA files. The following is just the -h all option with some more description. This problem uses extensive code from [Zorro](https://phylogenomics.me/software/zorro/) and [PaHMM-Tree](https://github.com/marbogusz/paHMM-Tree) and is distributed under a GPL v3.0. Please see the manual for more detailed information about functionality and settings.
 
 ### Options affecting the core region and filtering:
 	-corerun X       	: X number of high posterior sites at beginning and end before 
@@ -33,4 +33,10 @@ A program for finding sequencing errors in FASTA files. The following is just th
 					those words will not be filtered. In X one word per line.
 
 ### Usage:
-	seqfilter [options] input_file
+	./prequal [options] input_file
+	-h [all] for [full] options
+
+### Typical usage (should do a good job with most sequences):
+	 ./prequal input_file
+
+		

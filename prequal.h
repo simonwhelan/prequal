@@ -1,5 +1,5 @@
 /*
- * SeqFilter.h
+ * prequal.h
  *
  *  Created on: 12 Sep 2017
  *      Author: simon
@@ -19,8 +19,8 @@
 
 
 /////////////// General naming stuff
-const std::string PROGRAM_NAME = "seqfilter";
-const std::string VERSION_NUMBER = "0.04a";
+const std::string PROGRAM_NAME = "PREQUAL";
+const std::string VERSION_NUMBER = "1.00";
 #define DEFAULT_THRESHOLD 0.99
 
 extern std::stringstream warningStream;

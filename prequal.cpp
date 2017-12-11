@@ -1,26 +1,15 @@
 /*
- * SeqFilter.cpp
+ * prequal.cpp
  *
  *  Created on: 12 Sep 2017
- *      Author: simon
- *
- *      ---
- *
- *      Main functions for performing filtering
- *
- *      //
- *		TODO Check filterword list is working as intended
- *		TODO Repeat sequences
- *
- *
- *      Current idea list:
- *       * Store bounds for particular sequences in the pairHMM so custom bounds are internalised and multiple calls are not needed.
+ *      Author: Simon Whelan
+ *	Collaboration and testing: Fabien Burki and Iker Irisarri
  */
 
 
 #include <algorithm>
 #include <iomanip>
-#include "SeqFilter.h"
+#include "prequal.h"
 #include "Sequence.h"
 #include "ZorroInterface.h"
 

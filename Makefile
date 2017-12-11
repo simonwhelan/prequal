@@ -5,14 +5,14 @@ CPPFLAGS =  -Wall -Wshadow -fmessage-length=0 -std=c++11 -msse2 -mfpmath=sse
 CFLAGS = 
 
 INC = -I/usr/local/include
-PROGRAM = seqfilter
+PROGRAM = prequal
 
 # Headers
-HDR = hmm.h SeqFilter.h Sequence.h ZorroInterface.h
+HDR = hmm.h prequal.h Sequence.h ZorroInterface.h
 
 # Source
-CPPS = SeqFilter.cpp Options.cpp Sequence.cpp ZorroInterface.cpp
-CPPO = SeqFilter.o Options.o Sequence.o ZorroInterface.o
+CPPS = prequal.cpp Options.cpp Sequence.cpp ZorroInterface.cpp
+CPPO = prequal.o Options.o Sequence.o ZorroInterface.o
 SOURCE = hmm.c
 COBJS = hmm.o
 
@@ -26,7 +26,7 @@ $(COBJS) : $(HDR) $(SOURCE)
 $(CPPO) : $(HDR) $(CPPS)
 	$(CPP) $(OPTIMISER) $(CPPFLAGS) $(INC) -c $(CPPS)
 
-seqfilter : $(CPPO) $(COBJS)
+$(PROGRAM) : $(CPPO) $(COBJS)
 	$(CPP) $(CPPFLAGS) $(OPTIMISER) $(INC) $(LIB) $(COBJS) $(CPPO) -o $(PROGRAM)
 
 

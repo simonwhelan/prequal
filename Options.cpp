@@ -6,10 +6,19 @@
  *      Author: simon
  */
 
-#include "SeqFilter.h"
+#include "prequal.h"
 #include "Sequence.h"
 
 using namespace::std;
+
+string ShowUsage();
+
+string ShowUsage() {
+	stringstream t_name;
+	for(char c : PROGRAM_NAME) { t_name << (char) tolower(c); }
+	return "\n\nUsage: \n\t./" + t_name.str() + " [options] input_file\n\t-h [all] for [full] options\n\nTypical usage (should do a good job with most sequences):\n\t ./" + t_name.str() + " input_file\n\n";
+
+}
 
 COptions::COptions(int argc, char *argv[]) {
 	bool setThresh = false, setProp = false;
@@ -19,7 +28,7 @@ COptions::COptions(int argc, char *argv[]) {
 			<< "\n----------------------------------------------------";
 	// Check basic input is matched
 	if (argc < 2) {
-		cout << "\n\nIncorrect command line. Usage: \n\t" << PROGRAM_NAME << " [options] input_file\n\t-h [all] for [full] options\n";
+		cout << ShowUsage();
 		exit(-1);
 	}
 	// Get the input file
@@ -58,7 +67,7 @@ COptions::COptions(int argc, char *argv[]) {
 					cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 					cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
 					cout << "\n\t-nofilterword X     \t: Specify a file X that contains a list of words and sequence names that contain \n\t\t\t\t\tthose words will not be filtered. In X one word per line.";
-					cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file\n\n";
+					cout << ShowUsage();
 					exit(-1);
 				}
 			}
@@ -70,8 +79,7 @@ COptions::COptions(int argc, char *argv[]) {
 			cout << "\n\t\t\t\t\tX = closest : for Y closest relatives [DEFAULT; Y = " << PPnumber() << "]\n\t\t\t\t\tX = longest : for comparing the Y longest sequences [Y = " << PPnumber() << "]";
 			cout << "\n\t-filterjoin X       \t: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = " << FilterRange() << "]";
 			cout << "\n\t-nofilterlist X     \t: Specify a file X that contains a list of taxa names that will \n\t\t\t\t\tnot be filtered. In X one name per line.";
-			cout << "\n\nUsage:\n\t" << PROGRAM_NAME << " [options] input_file";
-			cout << "\nTypical usage (should do a good job with most sequences):\n\t " << PROGRAM_NAME << " input_file\n\n";
+			cout << ShowUsage();
 			exit(-1);
 		}
 		/////////// Core stuff
@@ -200,8 +208,7 @@ COptions::COptions(int argc, char *argv[]) {
 		}
 		///////////// Default option
 		else {
-			cout << "Incorrect command line. Usage: \n\t" << PROGRAM_NAME
-					<< " [options] input_file\n\t-h for full options\n";
+			cout << ShowUsage();
 			exit(-1);
 		}
 

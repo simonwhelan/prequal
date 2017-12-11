@@ -12,7 +12,7 @@ extern "C" {
 }
 
 #include "Sequence.h"
-#include "SeqFilter.h"
+#include "prequal.h"
 #include "ZorroInterface.h"
 
 using namespace::std;
