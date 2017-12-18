@@ -205,6 +205,8 @@ COptions::COptions(int argc, char *argv[]) {
 				cout << "\nError when defining -filterprop. Specify a valid number (0,1) afterwards\n";
 				exit(-1);
 			}
+		} else if(strcmp(argv[i], "-newHMM") == 0) {
+			_doHMMpostFilter = true;
 		}
 		///////////// Default option
 		else {

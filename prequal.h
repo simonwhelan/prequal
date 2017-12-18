@@ -20,8 +20,8 @@
 
 /////////////// General naming stuff
 const std::string PROGRAM_NAME = "PREQUAL";
-const std::string VERSION_NUMBER = "1.00";
-#define DEFAULT_THRESHOLD 0.99
+const std::string VERSION_NUMBER = "1.01";
+#define DEFAULT_THRESHOLD 0.994
 
 extern std::stringstream warningStream;
 
@@ -62,6 +62,10 @@ public:
 	double KeepProportion() { return _keepProportion; }
 	double KeepThreshold() { return _filterThreshold; }
 	int FilterRange() { return _joinFilterRange; }
+	// Extended HMM filtering
+	bool DoHMMpostFilter() { return _doHMMpostFilter; }
+	bool ExpErrorProb() { return _expErrorProb; }
+	bool ExpErrorLength() { return _expErrorLength; }
 	// 4. PP calculation options
 	int PPcalcNumber() { return _ppCalcs; }
 	bool AllPP() { if(_ppCalcs == -1) { return true; } return false; }
@@ -103,6 +107,10 @@ private:
 	double _keepProportion = 0.95;		// The proportion of residues to be kept
 	double _filterThreshold = DEFAULT_THRESHOLD;		// Hard set the filter threshold
 	int _joinFilterRange = 10;			// The maximum gap between filtered characters before the whole segment is filtered
+	// post pairHMM length filtering based on another HMM
+	bool _doHMMpostFilter = false;
+	double _expErrorProb = 0.001;			// Expected probability of errors
+	int _expErrorLength = 10;			// Expected error length
 	// Posterior probability calculation options
 	int _ppCalcs = 0;					// Options are 0: closest _ppCalcNumber; 1: longest _ppCalcNumber; -1: all
 	int _ppCalcNumber = 10;

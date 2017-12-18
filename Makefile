@@ -1,7 +1,7 @@
 CPP=g++ 
-CC=gcc
+CC=gcc -w
 OPTIMISER = -O3
-CPPFLAGS =  -Wall -Wshadow -fmessage-length=0 -std=c++11 -msse2 -mfpmath=sse
+CPPFLAGS =  -w -fmessage-length=0 -std=c++11 -msse2 -mfpmath=sse
 CFLAGS = 
 
 INC = -I/usr/local/include

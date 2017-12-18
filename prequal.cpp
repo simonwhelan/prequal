@@ -21,6 +21,10 @@ double **PP = NULL;
 COptions *options = NULL;			// Global options; would be better as a singleton, but this works
 stringstream warningStream;
 
+// Some local functions
+void DoHMMfiltering();
+void GetHMMLabelling(double er, double leave, CSequence &seq, int seqNum);
+
 int main(int argc, char * argv[]) {
 
 	// Collect options
@@ -245,6 +249,9 @@ void DoFiltering(double threshold) {
 	cout << "\n\tApplying standard threshold " << threshold;
 	int thresholdCount = 0;
 	int ignoreCount = 0;
+	// If required rework the posterior probabilities according to a length distribution HMM
+	if(options->DoHMMpostFilter()) { DoHMMfiltering(); }
+
 	// Apply the threshold in a simple way
 	for (int i = 0; i < data->size(); i++) {
 		// 1. Skip sequences on the filter lists
@@ -283,7 +290,7 @@ void DoFiltering(double threshold) {
 		cout << " ... " << filter_count << " additional regions removed" << flush;
 	}
 	// Tidy the front and back
-	if(options->RunBeforeInside() > 0) {
+	if(options->RunBeforeInside() > 0 && options->Remove2Core()) {
 		cout << "\n\tApplying front/back trimming for runs of " << options->RunBeforeInside();
 		int seqTrimmed = 0;
 		for (int i = 0; i < data->size(); i++) {
@@ -317,6 +324,108 @@ void DoFiltering(double threshold) {
 	}
 	if(ignoreCount > 0) { cout << "\n\tThere were " << ignoreCount << " sequences ignored by filtering due to word/name lists"; }
 }
+
+// Extends the edges if required
+void DoHMMfiltering() {
+
+	cout << "\nThis is some experimental annotation and should not be used by anyone but SW! Go away!"; exit(-1);
+
+	// 2-state HMM
+	// Good : Bad
+	// G:G = 1 - er [er = ErrorRate]
+	// G:B = er
+	// B:G = exit = (1 / l) [l = expected error length; geometric]
+	// BB = 1 - (1 / l)
+	for(int i = 0; i < data->size() ; i++) {
+		GetHMMLabelling(options->ExpErrorProb(), 1.0 / (double) options->ExpErrorLength(), data->at(i) ,i);
+	}
+}
+
+
+void GetHMMLabelling(double er, double leave, CSequence &seq, int seqNum) {
+	int end = seq.length()-1;
+	// Storage
+	vector<double> fGood(seq.length(),0.0), fBad(seq.length(),0.0);	// Forward
+	vector<double> bGood(seq.length(),0.0), bBad(seq.length(),0.0);	// Backward
+	double logF, logB;
+	// Eqm
+	double fG = log(leave/(er+leave));	// pi_Good
+	double fB = log(er/(er+leave));	// pi_Bad
+	// transitions
+	double GG = log(1.0 - er), GB = log(er), BG = log(leave), BB = log(1 - leave);
+
+	// Rework the PPs so no weird edge cases
+	double fix = 0.0001;
+	for(int i = 0; i < seq.length(); i++) { if(PP[seqNum][i] < fix) { PP[seqNum][i] = fix; } if(PP[seqNum][i] > 1.0 - fix) { PP[seqNum][i] = 1.0 - fix; } }
+
+	// Forward
+	//////////////////////////////////////////
+	// Initialise
+	fGood[0] = fG + GG + log(PP[seqNum][0]);
+	addLogProb(fB + BG + log(PP[seqNum][0]), fGood[0]);
+	fBad[0] = fG + GB + log(1.0 - PP[seqNum][0]);
+	addLogProb(fB + BB + log(1.0 - PP[seqNum][0]), fBad[0]);
+	// Recurse
+	for(int pos = 1 ; pos < seq.length(); pos++) {
+		// Good
+		fGood[pos] = fGood[pos-1] + GG + log(PP[seqNum][pos]);
+		addLogProb(fBad[pos-1] + BG + log(PP[seqNum][pos]), fGood[pos]);
+		// Bad
+		fBad[pos] = fGood[pos-1] + GB + log(1.0 - PP[seqNum][pos]);
+		addLogProb(fBad[pos-1] + BB + log(1.0 - PP[seqNum][pos]), fBad[pos]);
+	}
+	logF = fGood[end] + GG + fG;
+	addLogProb(fGood[end] + GB + fB, logF);
+	addLogProb(fBad[end] + BG + fG, logF);
+	addLogProb(fBad[end] + BB + fB, logF);
+	// **
+	// Backward
+	//////////////////////////////////////////
+	// Initialise
+/*	bGood[end] = fG + GG + log(PP[seqNum][end]);
+	addLogProb(fB + BG + log(PP[seqNum][end]), bGood[end]);
+	bBad[end] = fG + GB + log(1.0 - PP[seqNum][end]);
+	addLogProb(fB + BB + log(1.0 - PP[seqNum][end]), bBad[end]);
+	*/
+	/*
+	fGood[end] = fG + GG + log(PP[seqNum][end]);
+	addLogProb(fB + BG + log(PP[seqNum][end]), fGood[end]);
+	fBad[end] = fG + GB + log(1.0 - PP[seqNum][end]);
+	addLogProb(fB + BB + log(1.0 - PP[seqNum][end]), fBad[end]);
+	*/
+	fGood[end] = fG + GG + log(PP[seqNum][end]);
+	addLogProb(fB + BG + log(PP[seqNum][end]), fGood[end]);
+	fBad[end] = fG + GB + log(1.0 - PP[seqNum][end]);
+	addLogProb(fB + BB + log(1.0 - PP[seqNum][end]), fBad[end]);
+
+	// Recurse
+	for(int pos = seq.length()-2 ; pos >= 0 ; pos--) {
+		// Good
+		bGood[pos] = bGood[pos+1] + GG + log(PP[seqNum][pos]);
+		addLogProb(bBad[pos+1] + BG + log(PP[seqNum][pos]), bGood[pos]);
+		// Bad
+		bBad[pos] = bGood[pos+1] + GB + log(1.0 - PP[seqNum][pos]);
+		addLogProb(bBad[pos+1] + BB + log(1.0 - PP[seqNum][pos]), bBad[pos]);
+	}
+	logB = bGood[0] + GG + fG;
+	addLogProb(bGood[0] + GB + fB, logB);
+	addLogProb(bBad[0] + BG + fG,logB);
+	addLogProb(bBad[0] + BB + fB,logB);
+
+	cout << "\nHMM forward/backward not working quite right..."; exit(-1);
+	cout << "\nFor sequence " << seqNum << " = " << seq.Name() << "\n\tForward: " << logF << "\tBackward: " << logB;
+	for(int pos = 0; pos < seq.length() ; pos++) {
+		cout << "\n\t["<<pos<<"] " << fGood[pos] << "\t" << fBad[pos] << "\t" << bGood[pos] << "\t" << bBad[pos]  << " from PP: " << PP[seqNum][pos] << " -> newPP(good): " << (fGood[pos] + bGood[pos] - logF) << " ->" << exp(fGood[pos] + bGood[pos] - logF);
+	}
+
+	// Write over the original PPs with these new ones
+	for(int pos = 0; pos < seq.length() ; pos++) {
+		PP[seqNum][pos] = exp(fGood[pos] + bGood[pos] - logF);
+	}
+
+	exit(-1);
+}
+
 
 double mean(vector <double> vec) {
 	double ret = 0.0;
