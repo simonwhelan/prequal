@@ -23,9 +23,10 @@ A program to identify and mask regions with non-homologous adjacent characters i
 					X = closest : for Y closest relatives [DEFAULT; Y = 10]
 					X = longest : for comparing the Y longest sequences [Y = 10]
 	-filterprop X       	: Filter the sequences so that in total X proportion (range 0.0 - 1.0) 
-					of the sequences are maintained. (DEFAULT: 0.85)
+					of the sequences are maintained.
 	-filterthresh X     	: Filter the sequences to the posterior probabilities threshold X 
-					(range 0.0 - 1.0). Any amount of sequence can be removed. Not recommended.
+					(range 0.0 - 1.0). Any amount of sequence can be removed. 
+					Recommended option (DEFAULT X = 0.994).
 	-filterjoin X       	: Extend filtering over regions of unfiltered sequence less than X [DEFAULT X = 25]
 	-nofilterlist X     	: Specify a file X that contains a list of taxa names that will 
 					not be filtered. In X one name per line.

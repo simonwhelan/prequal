@@ -177,8 +177,9 @@ bool SimonGetPosteriors(int len, double **retPosteriors, bool doApprox, int appr
 	checkSpaceX = (double *) malloc(len * sizeof(double));
 	checkSpaceY = (double *) malloc(len * sizeof(double));
 	if (doApprox) {
-		leftBounds = (int *) malloc((len) * sizeof(int));
-		rightBounds = (int *) malloc((len) * sizeof(int));
+		printf("\nDeclaring left/right %d",len+3);
+		leftBounds = (int *) malloc((len + 3) * sizeof(int));
+		rightBounds = (int *) malloc((len + 3) * sizeof(int));
 	}
 	for (i = 0; i < len; i++) {
 		posterior[i] = 0.0;
@@ -200,7 +201,7 @@ bool SimonGetPosteriors(int len, double **retPosteriors, bool doApprox, int appr
 }
 
 bool SimonGetSubsetPosteriors(int len, double **retPosteriors, int **runList, int runListLength, bool doApprox, int ApproxSize) {
-	int i, j;
+	int i, j, k;
 	assert(allPosteriors == NULL);
 	allPosteriors = retPosteriors;
 
@@ -213,17 +214,17 @@ bool SimonGetSubsetPosteriors(int len, double **retPosteriors, int **runList, in
 	checkSpaceX = (double *) malloc(len * sizeof(double));
 	checkSpaceY = (double *) malloc(len * sizeof(double));
 	if (doApprox) {
-		leftBounds = (int *) malloc((len) * sizeof(int));
-		rightBounds = (int *) malloc((len) * sizeof(int));
+		leftBounds = (int *) malloc((len + 3) * sizeof(int));
+		rightBounds = (int *) malloc((len + 3) * sizeof(int));
 	}
 	for (i = 0; i < len; i++) {
 		posterior[i] = 0.0;
 		sample[i] = 0;
 	}
 //	printf("\nCollecting subset of posterior probabilities\n");
-	for (int i = 0; i < Nseq; i++) {
+	for (i = 0; i < Nseq; i++) {
 		ProgressSpinner(i + 1, Nseq);
-		for (int k = 0; k < my_min(runListLength,Nseq); k++) {
+		for (k = 0; k < my_min(runListLength,Nseq); k++) {
 			int j = runList[i][k];
 			assert(j >= 0 && j < Nseq);
 			if (j == i) {
@@ -266,7 +267,7 @@ void RunMakePosteriors(int X, int Y, bool DoApprox, int ApproxSize) {
 }
 // Function that calculates the posteriors for sequence X and Y
 bool MakePosteriors(int X, int Y, bool DoApprox) {
-	int i, Xp, Yp;
+	int i, j, Xp, Yp;
 	double f;
 	double maxPP = 0;
 
@@ -300,7 +301,7 @@ bool MakePosteriors(int X, int Y, bool DoApprox) {
 				return false;
 			}
 
-			for (int j = 1; j <= lens[Y]; j++) {
+			for (j = 1; j <= lens[Y]; j++) {
 				// The approximate bit
 				if (j < leftBounds[i - 1] || j > rightBounds[i - 1]) {
 					f = 0;
@@ -325,10 +326,10 @@ bool MakePosteriors(int X, int Y, bool DoApprox) {
 					return false;
 				}
 			}
-			int m = -1;
+			int m = -1, n;
 			if(i == m) {
 				printf("Site[%d]",i);
-				for(int n = 1; n < lens[Y]; n++) {
+				for(n = 1; n < lens[Y]; n++) {
 					if(n % 5 == 0) { printf("\n[[%d]]",n); }
 					printf(" %f",exp(Mfmatrix[i][n] + Mbmatrix[i][n] - pxy)); }
 				printf("\nBoundcheck: %f",exp(Mfmatrix[i][leftBounds[i - 1]] + Mbmatrix[i][leftBounds[i - 1]] - pxy));
@@ -341,7 +342,7 @@ bool MakePosteriors(int X, int Y, bool DoApprox) {
 			maxPP = 0;
 			BoundEdge = false;
 			maxIndex = -1;
-			for (int j = 1; j <= lens[X]; j++) {
+			for (j = 1; j <= lens[X]; j++) {
 				if (i < leftBounds[j-1] || i > rightBounds[j-1]) {
 					f = 0;
 				} else {
@@ -370,7 +371,7 @@ bool MakePosteriors(int X, int Y, bool DoApprox) {
 		// Do sequence X
 		for (i = 1; i <= lens[X]; i++) { // Loop through the sequence
 			maxPP = 0;
-			for (int j = 1; j <= lens[Y]; j++) {
+			for (j = 1; j <= lens[Y]; j++) {
 #ifdef ADD
 				f = exp(Mfmatrix[i][j] + Mbmatrix[i][j] - pxy);
 #else
@@ -384,7 +385,7 @@ bool MakePosteriors(int X, int Y, bool DoApprox) {
 		// Do sequence Y
 		for (i = 1; i <= lens[Y]; i++) { // Loop through the sequence
 			maxPP = 0;
-			for (int j = 1; j <= lens[X]; j++) {
+			for (j = 1; j <= lens[X]; j++) {
 #ifdef ADD
 				f = exp(Mfmatrix[j][i] + Mbmatrix[j][i] - pxy);
 #else
@@ -954,14 +955,15 @@ void backward(char *seqX, char *seqY, int lenX, int lenY) {
 ////////////////////////////////// Approximate PP routines //////////////////////////////////////
 
 void BuildBounds(int X, int Y) {
+	int i;
 	assert(lens[X] <= lens[Y]);
 	int diff = lens[Y] - lens[X];
 //	printf("\nBuilding bounds [%d,%d] : %d", X,Y, BOUND_SIZE + diff);
 	double ratio = (double) lens[Y] / (double) lens[X];
-	for (int i = 0; i < lens[X] + 1; i++) {
+	for (i = 0; i < lens[X] + 1; i++) {
 		int start_pos = (int) ((double) i * ratio);
-		leftBounds[i] = my_max(0,start_pos - BOUND_SIZE - diff);
-		rightBounds[i] = my_min(lens[Y], start_pos + BOUND_SIZE + diff);
+		leftBounds[i] = my_max(0, my_min(start_pos - BOUND_SIZE - diff, lens[Y]) );
+		rightBounds[i] = my_min(lens[Y], my_max(0,start_pos + BOUND_SIZE + diff));
 		//		printf("\n[%d] : %d - %d", i,leftBounds[i],rightBounds[i]);
 	}
 }

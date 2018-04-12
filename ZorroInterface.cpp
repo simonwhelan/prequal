@@ -120,7 +120,7 @@ double ** RunHMM(vector <CSequence> *cpp_seq, string outFile, bool forceOverwrit
 				else if(rLsize != listSize) { cout << "\nProblem with different sized lists of running groups..."; }
 				// Complex logic that picks the closest, while ensure at least reqOverMedian sequences are of at least median size
 				for(int j = 0; j < list.size() && listSize > 0; j++) {
-					if(numOverMedian <= 0 || listSize > numOverMedian || cpp_seq->at(list[j]).length() > median_length || options->PPnumber() > list.size()) {
+					if(numOverMedian <= 0 || listSize > numOverMedian || cpp_seq->at(list[j]).length() >= median_length || options->PPnumber() > list.size()) {
 						if(cpp_seq->at(list[j]).length() >= median_length) { numOverMedian --; }
 						runList[i][pos++] = list[j];
 						listSize--;

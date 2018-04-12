@@ -90,7 +90,7 @@ bool CSequence::CleanRepeat(int repeatLength) {
 	string dna = _dna_seq;
 	bool foundRepeat = false;
 	int end;
-	for(int pos = 0; pos < seq.size() - repeatLength; pos ++) {
+	for(int pos = 0; pos < (int) seq.size() - repeatLength; pos ++) {
 		string repeat = seq.substr(pos,repeatLength);
 		// Repeat can never contain X
 		if(find(repeat.begin(),repeat.end(),'X') != repeat.end()) { continue; }
@@ -99,7 +99,7 @@ bool CSequence::CleanRepeat(int repeatLength) {
 			next_pos = seq.find(repeat,next_pos);
 			if(next_pos == string::npos) { break; }
 			foundRepeat=true;
-			for(end = 0; end < seq.size() - repeatLength - next_pos; end++) { // Extend the repeat while there is perfect match
+			for(end = 0; end < (int) seq.size() - repeatLength - next_pos; end++) { // Extend the repeat while there is perfect match
 				if(seq[pos + end + repeatLength] != seq[next_pos + end + repeatLength]) { break; }
 			}
 			seq.erase(next_pos,repeatLength + end);

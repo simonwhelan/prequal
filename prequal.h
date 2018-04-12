@@ -16,6 +16,8 @@
 #include <vector>
 #include <numeric>
 #include <regex>
+#include <cstring>
+#include <math.h>
 
 
 /////////////// General naming stuff
