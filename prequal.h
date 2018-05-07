@@ -22,7 +22,7 @@
 
 /////////////// General naming stuff
 const std::string PROGRAM_NAME = "PREQUAL";
-const std::string VERSION_NUMBER = "1.01";
+const std::string VERSION_NUMBER = "1.02";
 #define DEFAULT_THRESHOLD 0.994
 
 extern std::stringstream warningStream;
