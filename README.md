@@ -40,4 +40,5 @@ A program to identify and mask regions with non-homologous adjacent characters i
 ### Typical usage (should do a good job with most sequences):
 	 ./prequal input_file
 
-		
+### Citation
+PREQUAL: a program for detecting errors in sets of unaligned homologous sequences. Whelan, Irisarri & Burki. In Press. Bioinformatics. <https://doi.org/10.1093/bioinformatics/bty448>
